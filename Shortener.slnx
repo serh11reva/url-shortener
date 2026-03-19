@@ -14,7 +14,10 @@
     <Project Path="src/Shortener.Infrastructure.Shared/Shortener.Infrastructure.Shared.csproj" Id="100c9a69-932d-436f-b3c5-c956ee12239a" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Shortener.Application.Tests/Shortener.Application.Tests.csproj" />
     <Project Path="tests/Shortener.Domain.Tests/Shortener.Domain.Tests.csproj" Id="4712dfc2-54d5-4833-894b-8600d37d36aa" />
+    <Project Path="tests/Shortener.Infrastructure.Database.Tests/Shortener.Infrastructure.Database.Tests.csproj" />
+    <Project Path="tests/Shortener.IntegrationTests/Shortener.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/_aspire/">
     <Project Path="src/Shortener.AppHost/Shortener.AppHost.csproj" />

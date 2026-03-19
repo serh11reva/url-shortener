@@ -13,6 +13,11 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Cosmos" />
     <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="StackExchange.Redis" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shortener.Application.Abstractions\Shortener.Application.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>

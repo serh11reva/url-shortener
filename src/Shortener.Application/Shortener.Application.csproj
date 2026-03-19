@@ -8,6 +8,11 @@
 
   <ItemGroup>
     <PackageReference Include="MediatR" />
+    <PackageReference Include="Sqids" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shortener.Application.Abstractions\Shortener.Application.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>

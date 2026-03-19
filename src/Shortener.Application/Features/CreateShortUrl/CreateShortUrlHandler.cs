@@ -1,14 +1,80 @@
 using MediatR;
+using Shortener.Application.Abstractions.Counter;
+using Shortener.Application.Abstractions.Exceptions;
+using Shortener.Application.Abstractions.ShortUrls;
+using Shortener.Application.Shared;
+using Shortener.Domain;
+using Sqids;
 
 namespace Shortener.Application.Features.CreateShortUrl;
 
-public class CreateShortUrlHandler : IRequestHandler<CreateShortUrlCommand, CreateShortUrlResult>
+public sealed class CreateShortUrlHandler : IRequestHandler<CreateShortUrlCommand, CreateShortUrlResult>
 {
-    public Task<CreateShortUrlResult> Handle(CreateShortUrlCommand request, CancellationToken cancellationToken)
+    private static readonly SqidsEncoder<long> ShortCodeEncoder = new();
+    private readonly IShortUrlRepository _repository;
+    private readonly IShortCodeCounter _counter;
+    private readonly IShortUrlCache _cache;
+
+    public CreateShortUrlHandler(
+        IShortUrlRepository repository,
+        IShortCodeCounter counter,
+        IShortUrlCache cache)
     {
-        // Stub: return placeholder until Task 2.x implements counter and persistence
-        var shortCode = "stub1";
-        var shortUrl = $"/{shortCode}";
-        return Task.FromResult(new CreateShortUrlResult(shortCode, shortUrl));
+        _repository = repository;
+        _counter = counter;
+        _cache = cache;
+    }
+
+    public async Task<CreateShortUrlResult> Handle(CreateShortUrlCommand request, CancellationToken cancellationToken)
+    {
+        CreateShortUrlValidator.Validate(request.LongUrl, request.Alias);
+
+        var longUrlHash = LongUrlHasher.ComputeHash(request.LongUrl);
+        var existing = await _repository.FindExistingByLongUrlHashAndAliasAsync(
+            longUrlHash,
+            request.Alias,
+            cancellationToken);
+
+        if (existing is not null)
+        {
+            return new CreateShortUrlResult(existing.ShortCode);
+        }
+
+        var shortCode = await CreateShortCode(request, cancellationToken);
+        var entity = new ShortUrl(
+            shortCode,
+            request.LongUrl,
+            longUrlHash,
+            request.Alias,
+            DateTime.UtcNow,
+            null);
+
+        await _repository.AddAsync(entity, cancellationToken);
+
+        await _cache.SetAsync(shortCode, request.LongUrl, null, cancellationToken);
+
+        return new CreateShortUrlResult(shortCode);
+    }
+
+    private async Task<string> CreateShortCode(CreateShortUrlCommand request, CancellationToken cancellationToken)
+    {
+        string shortCode;
+        if (!string.IsNullOrEmpty(request.Alias))
+        {
+            var existingByAlias = await _repository.GetByAliasAsync(request.Alias, cancellationToken);
+            if (existingByAlias is not null)
+            {
+                throw new AliasAlreadyExistsException(request.Alias);
+            }
+
+            shortCode = request.Alias!;
+        }
+        else
+        {
+            var value = await _counter.GetNextAsync(cancellationToken);
+            shortCode = ShortCodeEncoder.Encode(value);
+        }
+
+        return shortCode;
     }
 }
