@@ -1,0 +1,23 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/01 Hosts/">
+    <Project Path="src/Shortener.Host.Api/Shortener.Host.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/02 Application/">
+    <Project Path="src/Shortener.Application.Abstractions/Shortener.Application.Abstractions.csproj" Id="2ce2b5a8-20f7-47bb-94ad-420d408a14b0" />
+    <Project Path="src/Shortener.Application/Shortener.Application.csproj" Id="354244b1-249d-4eed-9788-c5f97e215684" />
+    <Project Path="src/Shortener.Domain/Shortener.Domain.csproj" Id="48919b00-6088-439d-95a8-0b60962ed574" />
+    <Project Path="src/Shortener.Infrastructure.Abstractions/Shortener.Infrastructure.Abstractions.csproj" Id="0f029860-d7c4-4dbf-9aa4-23a699ec04e7" />
+  </Folder>
+  <Folder Name="/src/03 Infrastructure/">
+    <Project Path="src/Shortener.Infrastructure.Database/Shortener.Infrastructure.Database.csproj" Id="7622eae0-7ba3-456a-9125-730a4e84b00c" />
+    <Project Path="src/Shortener.Infrastructure.Shared/Shortener.Infrastructure.Shared.csproj" Id="100c9a69-932d-436f-b3c5-c956ee12239a" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Shortener.Domain.Tests/Shortener.Domain.Tests.csproj" Id="4712dfc2-54d5-4833-894b-8600d37d36aa" />
+  </Folder>
+  <Folder Name="/_aspire/">
+    <Project Path="src/Shortener.AppHost/Shortener.AppHost.csproj" />
+    <Project Path="src/Shortener.ServiceDefaults/Shortener.ServiceDefaults.csproj" />
+  </Folder>
+</Solution>

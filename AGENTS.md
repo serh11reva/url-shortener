@@ -13,14 +13,14 @@ This document defines the specialized AI personas used to build and maintain thi
 
 ## Documentation Map (Use when implementing)
 
-| Purpose | Document |
-|--------|----------|
-| Solution overview, NFRs, testing, CI/CD, security, scalability | [docs/solution.md](docs/solution.md) |
-| Architecture, components, deployment, observability | [docs/architecture.md](docs/architecture.md) |
+| Purpose                                                       | Document                                      |
+| ------------------------------------------------------------- | --------------------------------------------- |
+| Solution overview, NFRs, testing, CI/CD, security, scalability | [docs/solution.md](docs/solution.md)           |
+| Architecture, components, deployment, observability            | [docs/architecture.md](docs/architecture.md)   |
 | Features (shortening, redirect, expiration, analytics, security) | [docs/features/index.md](docs/features/index.md) |
-| Architecture decision records (ADRs) | [docs/decisions.md](docs/decisions.md) |
-| Work items / task list | [docs/tasks.md](docs/tasks.md) |
-| Completion criteria | [docs/definition-of-done.md](docs/definition-of-done.md) |
+| Architecture decision records (ADRs)                           | [docs/decisions.md](docs/decisions.md)        |
+| Work items / task list                                        | [docs/tasks.md](docs/tasks.md)                 |
+| Completion criteria                                           | [docs/definition-of-done.md](docs/definition-of-done.md) |
 
 ---
 
