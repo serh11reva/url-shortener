@@ -62,10 +62,18 @@ Connection strings and keys (Cosmos DB, Redis) are configured via Aspire or envi
 
 ```text
 src/
-├── Shortener.Host.Api/      # Minimal API (redirect, create, analytics)
-├── Shortener.ServiceDefaults/  # Shared Aspire/OTel and resilience
-└── Shortener.AppHost/       # Aspire host (orchestrates API, Redis, Cosmos)
-docs/                        # Architecture, features, ADRs, tasks
+├── Shortener.AppHost/              # Aspire host (orchestrates API, Redis, Cosmos)
+├── Shortener.Host.Api/             # Minimal API (redirect, create, analytics)
+├── Shortener.ServiceDefaults/      # Shared Aspire, OpenTelemetry, resilience
+├── Shortener.Domain/               # Domain models and logic
+├── Shortener.Application/          # CQRS handlers (MediatR), vertical slices
+├── Shortener.Application.Abstractions/  # Application contracts and interfaces
+├── Shortener.Infrastructure.Abstractions/  # Persistence/cache abstractions
+├── Shortener.Infrastructure.Shared/       # Shared infrastructure utilities
+└── Shortener.Infrastructure.Database/     # Cosmos DB implementation
+tests/
+└── Shortener.Domain.Tests/         # Domain unit tests
+docs/                               # Architecture, features, ADRs, tasks
 ```
 
 ---
