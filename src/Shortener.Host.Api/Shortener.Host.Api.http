@@ -1,0 +1,21 @@
+@Shortener.Host.Api_HostAddress = http://localhost:5175
+
+### Create short URL
+POST {{Shortener.Host.Api_HostAddress}}/api/urls
+Content-Type: application/json
+
+{
+  "longUrl": "https://example.com/long-url",
+  "alias": null
+}
+
+###
+
+### Redirect by short code
+GET {{Shortener.Host.Api_HostAddress}}/stub1
+
+###
+
+### Get analytics for short code
+GET {{Shortener.Host.Api_HostAddress}}/api/urls/stub1/stats
+Accept: application/json
