@@ -20,7 +20,7 @@ public class CosmosDbHealthCheck : IHealthCheck
         try
         {
             var database = _client.GetDatabase(_options.DatabaseId);
-            await database.ReadAsync(requestOptions: null, cancellationToken).ConfigureAwait(false);
+            await database.ReadAsync(requestOptions: null, cancellationToken);
             return HealthCheckResult.Healthy("Cosmos DB is reachable.");
         }
         catch (Exception ex)

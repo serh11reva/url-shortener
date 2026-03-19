@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Shortener.Application\Shortener.Application.csproj" />
+    <ProjectReference Include="..\Shortener.Infrastructure.Database\Shortener.Infrastructure.Database.csproj" />
     <ProjectReference Include="..\Shortener.Infrastructure.Shared\Shortener.Infrastructure.Shared.csproj" />
     <ProjectReference Include="..\Shortener.ServiceDefaults\Shortener.ServiceDefaults.csproj" />
   </ItemGroup>
