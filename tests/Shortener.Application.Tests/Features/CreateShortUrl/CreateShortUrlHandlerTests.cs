@@ -161,11 +161,21 @@ public sealed class CreateShortUrlHandlerTests
 
     private sealed class FakeShortUrlCache : IShortUrlCache
     {
-        public List<(string shortCode, string longUrl)> SetCalls { get; } = [];
+        public List<(string shortCode, string longUrl, DateTime? expiresAt)> SetCalls { get; } = [];
 
-        public Task SetAsync(string shortCode, string longUrl, TimeSpan? ttl, CancellationToken cancellationToken = default)
+        public Task<CachedShortUrl?> GetAsync(string shortCode, CancellationToken cancellationToken = default)
         {
-            SetCalls.Add((shortCode, longUrl));
+            return Task.FromResult<CachedShortUrl?>(null);
+        }
+
+        public Task SetAsync(string shortCode, string longUrl, DateTime? expiresAt, TimeSpan? ttl, CancellationToken cancellationToken = default)
+        {
+            SetCalls.Add((shortCode, longUrl, expiresAt));
+            return Task.CompletedTask;
+        }
+
+        public Task RemoveAsync(string shortCode, CancellationToken cancellationToken = default)
+        {
             return Task.CompletedTask;
         }
     }

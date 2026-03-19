@@ -5,5 +5,14 @@ namespace Shortener.Application.Abstractions.ShortUrls;
 /// </summary>
 public interface IShortUrlCache
 {
-    Task SetAsync(string shortCode, string longUrl, TimeSpan? ttl = null, CancellationToken cancellationToken = default);
+    Task<CachedShortUrl?> GetAsync(string shortCode, CancellationToken cancellationToken = default);
+
+    Task SetAsync(
+        string shortCode,
+        string longUrl,
+        DateTime? expiresAt,
+        TimeSpan? ttl = null,
+        CancellationToken cancellationToken = default);
+
+    Task RemoveAsync(string shortCode, CancellationToken cancellationToken = default);
 }

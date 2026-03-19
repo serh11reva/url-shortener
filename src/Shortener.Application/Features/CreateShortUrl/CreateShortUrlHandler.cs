@@ -51,7 +51,7 @@ public sealed class CreateShortUrlHandler : IRequestHandler<CreateShortUrlComman
 
         await _repository.AddAsync(entity, cancellationToken);
 
-        await _cache.SetAsync(shortCode, request.LongUrl, null, cancellationToken);
+        await _cache.SetAsync(shortCode, request.LongUrl, null, null, cancellationToken);
 
         return new CreateShortUrlResult(shortCode);
     }

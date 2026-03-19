@@ -6,33 +6,33 @@ This document provides a prioritized list of work items for building the URL sho
 
 ## 1. Foundation & Infrastructure
 
-- [ ] **1.0** **Repo conventions:** Ensure root [.editorconfig](../.editorconfig) exists and is followed by all generated code. Create root [Directory.Packages.props](../Directory.Packages.props) and enable Central Package Management; all .NET projects must reference packages without a `Version` attribute (see [decisions.md](./decisions.md) ADR-010, ADR-011).
-- [ ] **1.1** Create solution structure: .NET 10 **Minimal API** (not MVC controllers), vertical slices (e.g., CreateShortUrl, Redirect, Analytics), CQRS with MediatR (<13.0). Use CPM for all package versions (see ADR-012).
-- [ ] **1.2** Add Cosmos DB and Redis client libraries and configuration (connection strings, container/keys). Add package references via CPM only.
-- [ ] **1.3** Configure .NET Aspire host and add API, Redis, and Cosmos DB (or emulators) for local development.
-- [ ] **1.4** Add health checks (liveness, readiness) including Cosmos DB and Redis.
-- [ ] **1.5** Add OpenTelemetry (logging, metrics, tracing) via Aspire defaults.
-- [ ] **1.6** Implement global error handling: RFC 7807 ProblemDetails, proper HTTP status codes, log all exceptions (no silent failures).
-- [ ] **1.7** Add rate limiting and throttling per IP (middleware); return 429 when exceeded.
+- [x] **1.0** **Repo conventions:** Ensure root [.editorconfig](../.editorconfig) exists and is followed by all generated code. Create root [Directory.Packages.props](../Directory.Packages.props) and enable Central Package Management; all .NET projects must reference packages without a `Version` attribute (see [decisions.md](./decisions.md) ADR-010, ADR-011).
+- [x] **1.1** Create solution structure: .NET 10 **Minimal API** (not MVC controllers), vertical slices (e.g., CreateShortUrl, Redirect, Analytics), CQRS with MediatR (<13.0). Use CPM for all package versions (see ADR-012).
+- [x] **1.2** Add Cosmos DB and Redis client libraries and configuration (connection strings, container/keys). Add package references via CPM only.
+- [x] **1.3** Configure .NET Aspire host and add API, Redis, and Cosmos DB (or emulators) for local development.
+- [x] **1.4** Add health checks (liveness, readiness) including Cosmos DB and Redis.
+- [x] **1.5** Add OpenTelemetry (logging, metrics, tracing) via Aspire defaults.
+- [x] **1.6** Implement global error handling: RFC 7807 ProblemDetails, proper HTTP status codes, log all exceptions (no silent failures).
+- [x] **1.7** Add rate limiting and throttling per IP (middleware); return 429 when exceeded.
 
 ---
 
 ## 2. URL Shortening (Create)
 
-- [ ] **2.1** Implement counter-based short code generation: Base62, max 7 characters; allocate counter ranges from Cosmos DB for scalability.
-- [ ] **2.2** Implement CreateShortUrl command/handler: validate long URL, optional user-defined alias; enforce uniqueness for alias; persist to Cosmos DB; optionally cache in Redis.
-- [ ] **2.3** Support optional idempotent creation: same long URL + alias returns existing short URL (see ADR-005).
-- [ ] **2.4** Expose REST endpoint (e.g., POST /api/urls) with validation; return short URL in response.
-- [ ] **2.5** Unit tests: validation, Base62 generation, collision-free behavior. Integration tests: create flow with Cosmos DB (or emulator).
+- [x] **2.1** Implement counter-based short code generation: Base62, max 7 characters; allocate counter ranges from Cosmos DB for scalability.
+- [x] **2.2** Implement CreateShortUrl command/handler: validate long URL, optional user-defined alias; enforce uniqueness for alias; persist to Cosmos DB; optionally cache in Redis.
+- [x] **2.3** Support optional idempotent creation: same long URL + alias returns existing short URL (see ADR-005).
+- [x] **2.4** Expose REST endpoint (e.g., POST /api/urls) with validation; return short URL in response.
+- [x] **2.5** Unit tests: validation, Base62 generation, collision-free behavior. Integration tests: create flow with Cosmos DB (or emulator).
 
 ---
 
 ## 3. Redirect
 
-- [ ] **3.1** Implement GetRedirectTarget query/handler: lookup by short code; check Redis first (cache-aside), then Cosmos DB; consider expiration and “not accessed for 1 month” (return 404 when expired or deleted).
-- [ ] **3.2** Implement redirect endpoint (e.g., GET /{shortCode}): 302/301 to long URL; 404 for missing or expired. Target latency <100ms.
-- [ ] **3.3** On cache miss: load from Cosmos DB, validate (not expired, not deleted), cache in Redis, then redirect.
-- [ ] **3.4** Integration tests: redirect hit, cache miss, expired link 404. E2E: create then redirect.
+- [x] **3.1** Implement GetRedirectTarget query/handler: lookup by short code; check Redis first (cache-aside), then Cosmos DB; consider expiration and “not accessed for 1 month” (return 404 when expired or deleted).
+- [x] **3.2** Implement redirect endpoint (e.g., GET /{shortCode}): 302/301 to long URL; 404 for missing or expired. Target latency <100ms.
+- [x] **3.3** On cache miss: load from Cosmos DB, validate (not expired, not deleted), cache in Redis, then redirect.
+- [x] **3.4** Integration tests: redirect hit, cache miss, expired link 404. E2E: create then redirect.
 
 ---
 
