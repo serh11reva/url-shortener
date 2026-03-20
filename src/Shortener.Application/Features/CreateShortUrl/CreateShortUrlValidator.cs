@@ -11,7 +11,7 @@ public static partial class CreateShortUrlValidator
 
     private static readonly Regex AliasRegex = GetAliasRegex();
 
-    public static void Validate(string longUrl, string? alias)
+    public static void Validate(string longUrl, string? alias, DateTime? expiresAt)
     {
         if (string.IsNullOrWhiteSpace(longUrl))
         {
@@ -47,6 +47,11 @@ public static partial class CreateShortUrlValidator
                 throw new CreateShortUrlValidationException(
                     "Alias must contain only alphanumeric characters (a-z, A-Z, 0-9).");
             }
+        }
+
+        if (expiresAt.HasValue && expiresAt.Value <= DateTime.UtcNow)
+        {
+            throw new CreateShortUrlValidationException("ExpiresAt must be a future UTC timestamp.");
         }
     }
 

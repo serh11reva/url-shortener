@@ -24,7 +24,7 @@ public sealed class RedirectIntegrationTests : IClassFixture<ShortenerAppFixture
         using (var scope = _fixture.Factory.Services.CreateScope())
         {
             var cache = scope.ServiceProvider.GetRequiredService<IShortUrlCache>();
-            await cache.SetAsync(shortCode, longUrl, null, null, CancellationToken.None);
+            await cache.SetAsync(shortCode, new CachedShortUrl(longUrl, null), CancellationToken.None);
         }
 
         var client = _fixture.Factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
@@ -101,6 +101,43 @@ public sealed class RedirectIntegrationTests : IClassFixture<ShortenerAppFixture
                     alias = (string?)null,
                     createdAt = DateTime.UtcNow.AddDays(-40),
                     expiresAt = DateTime.UtcNow.AddMinutes(-1)
+                },
+                new PartitionKey(shortCode));
+
+            await redis.GetDatabase().KeyDeleteAsync("short:" + shortCode);
+        }
+
+        var client = _fixture.Factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+        var response = await client.GetAsync($"/{shortCode}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GET_shortCode_InactiveLink_Returns404()
+    {
+        var shortCode = $"ina{Guid.NewGuid():N}"[..10];
+
+        using (var scope = _fixture.Factory.Services.CreateScope())
+        {
+            var services = scope.ServiceProvider;
+            var container = services.GetRequiredService<Container>();
+            var redis = services.GetRequiredService<IConnectionMultiplexer>();
+
+            await container.CreateItemAsync(
+                new
+                {
+                    id = shortCode,
+                    pk = shortCode,
+                    longUrl = "https://example.com/inactive",
+                    longUrlHash = "hash",
+                    alias = (string?)null,
+                    createdAt = DateTime.UtcNow.AddDays(-40),
+                    expiresAt = (DateTime?)null,
+                    lastAccessedAt = DateTime.UtcNow.AddDays(-31)
                 },
                 new PartitionKey(shortCode));
 

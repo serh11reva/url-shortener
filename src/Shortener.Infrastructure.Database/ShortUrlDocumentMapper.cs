@@ -21,7 +21,8 @@ internal static class ShortUrlDocumentMapper
             LongUrlHash = entity.LongUrlHash,
             Alias = entity.Alias,
             CreatedAt = entity.CreatedAt,
-            ExpiresAt = entity.ExpiresAt
+            ExpiresAt = entity.ExpiresAt,
+            LastAccessedAt = entity.LastAccessedAt
         };
     }
 
@@ -30,6 +31,6 @@ internal static class ShortUrlDocumentMapper
     /// </summary>
     internal static ShortUrl ToDomain(ShortUrlDocument doc)
     {
-        return new ShortUrl(doc.Id, doc.LongUrl, doc.LongUrlHash, doc.Alias, doc.CreatedAt, doc.ExpiresAt);
+        return new ShortUrl(doc.Id, doc.LongUrl, doc.LongUrlHash, doc.Alias, doc.CreatedAt, doc.ExpiresAt, doc.LastAccessedAt);
     }
 }

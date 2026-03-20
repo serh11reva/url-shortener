@@ -14,13 +14,15 @@ public sealed class GetRedirectTargetHandlerTests
         {
             CachedResult = new CachedShortUrl("https://example.com/cache-hit", null)
         };
-        var handler = new GetRedirectTargetHandler(repository, cache);
+        var handler = new GetRedirectTargetHandler(repository, cache, new FakeLifecyclePolicy());
 
         var result = await handler.Handle(new GetRedirectTargetQuery("abc123"), CancellationToken.None);
 
         Assert.True(result.Found);
         Assert.Equal("https://example.com/cache-hit", result.LongUrl);
         Assert.Equal(0, repository.GetByShortCodeCallCount);
+        Assert.Single(repository.MarkAccessedCalls);
+        Assert.Equal("abc123", repository.MarkAccessedCalls[0]);
     }
 
     [Fact]
@@ -31,7 +33,7 @@ public sealed class GetRedirectTargetHandlerTests
             GetByShortCodeResult = new ShortUrl("code01", "https://example.com/db", "hash", null, DateTime.UtcNow)
         };
         var cache = new FakeShortUrlCache();
-        var handler = new GetRedirectTargetHandler(repository, cache);
+        var handler = new GetRedirectTargetHandler(repository, cache, new FakeLifecyclePolicy());
 
         var result = await handler.Handle(new GetRedirectTargetQuery("code01"), CancellationToken.None);
 
@@ -39,6 +41,7 @@ public sealed class GetRedirectTargetHandlerTests
         Assert.Equal("https://example.com/db", result.LongUrl);
         Assert.Single(cache.SetCalls);
         Assert.Equal("code01", cache.SetCalls[0].shortCode);
+        Assert.Single(repository.MarkAccessedCalls);
     }
 
     [Fact]
@@ -55,18 +58,46 @@ public sealed class GetRedirectTargetHandlerTests
                 DateTime.UtcNow.AddMinutes(-5))
         };
         var cache = new FakeShortUrlCache();
-        var handler = new GetRedirectTargetHandler(repository, cache);
+        var handler = new GetRedirectTargetHandler(repository, cache, new FakeLifecyclePolicy());
 
         var result = await handler.Handle(new GetRedirectTargetQuery("expired1"), CancellationToken.None);
 
         Assert.False(result.Found);
         Assert.Empty(cache.SetCalls);
+        Assert.Single(repository.RemovedCalls);
+        Assert.Single(cache.RemovedCalls);
+    }
+
+    [Fact]
+    public async Task Handle_InactiveLink_ReturnsNotFoundAndDeletes()
+    {
+        var repository = new FakeShortUrlRepository
+        {
+            GetByShortCodeResult = new ShortUrl(
+                "inactive1",
+                "https://example.com/inactive",
+                "hash",
+                null,
+                DateTime.UtcNow.AddDays(-40),
+                null,
+                DateTime.UtcNow.AddDays(-31))
+        };
+        var cache = new FakeShortUrlCache();
+        var handler = new GetRedirectTargetHandler(repository, cache, new FakeLifecyclePolicy());
+
+        var result = await handler.Handle(new GetRedirectTargetQuery("inactive1"), CancellationToken.None);
+
+        Assert.False(result.Found);
+        Assert.Single(repository.RemovedCalls);
+        Assert.Single(cache.RemovedCalls);
     }
 
     private sealed class FakeShortUrlRepository : IShortUrlRepository
     {
         public int GetByShortCodeCallCount { get; private set; }
         public ShortUrl? GetByShortCodeResult { get; set; }
+        public List<string> MarkAccessedCalls { get; } = [];
+        public List<string> RemovedCalls { get; } = [];
 
         public Task<ShortUrl?> GetByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default)
         {
@@ -82,26 +113,48 @@ public sealed class GetRedirectTargetHandlerTests
 
         public Task AddAsync(ShortUrl entity, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
+
+        public Task MarkAccessedAsync(string shortCode, DateTime accessedAtUtc, CancellationToken cancellationToken = default)
+        {
+            MarkAccessedCalls.Add(shortCode);
+            return Task.CompletedTask;
+        }
+
+        public Task RemoveByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default)
+        {
+            RemovedCalls.Add(shortCode);
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyCollection<string>> DeleteExpiredAndInactiveAsync(DateTime nowUtc, TimeSpan inactiveFor, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyCollection<string>>(Array.Empty<string>());
+    }
+
+    private sealed class FakeLifecyclePolicy : IShortUrlLifecyclePolicy
+    {
+        public TimeSpan InactiveLinkThreshold => TimeSpan.FromDays(30);
     }
 
     private sealed class FakeShortUrlCache : IShortUrlCache
     {
         public CachedShortUrl? CachedResult { get; set; }
-        public List<(string shortCode, string longUrl, DateTime? expiresAt)> SetCalls { get; } = [];
+        public List<(string shortCode, CachedShortUrl value)> SetCalls { get; } = [];
+        public List<string> RemovedCalls { get; } = [];
 
         public Task<CachedShortUrl?> GetAsync(string shortCode, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(CachedResult);
         }
 
-        public Task SetAsync(string shortCode, string longUrl, DateTime? expiresAt, TimeSpan? ttl = null, CancellationToken cancellationToken = default)
+        public Task SetAsync(string shortCode, CachedShortUrl value, CancellationToken cancellationToken = default)
         {
-            SetCalls.Add((shortCode, longUrl, expiresAt));
+            SetCalls.Add((shortCode, value));
             return Task.CompletedTask;
         }
 
         public Task RemoveAsync(string shortCode, CancellationToken cancellationToken = default)
         {
+            RemovedCalls.Add(shortCode);
             return Task.CompletedTask;
         }
     }

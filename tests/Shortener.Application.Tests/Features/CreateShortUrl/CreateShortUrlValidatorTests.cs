@@ -8,13 +8,13 @@ public sealed class CreateShortUrlValidatorTests
     [Fact]
     public void Validate_ValidHttpUrl_DoesNotThrow()
     {
-        CreateShortUrlValidator.Validate("http://example.com/path", null);
+        CreateShortUrlValidator.Validate("http://example.com/path", null, null);
     }
 
     [Fact]
     public void Validate_ValidHttpsUrl_DoesNotThrow()
     {
-        CreateShortUrlValidator.Validate("https://example.com", null);
+        CreateShortUrlValidator.Validate("https://example.com", null, null);
     }
 
     [Theory]
@@ -24,7 +24,7 @@ public sealed class CreateShortUrlValidatorTests
     public void Validate_NullOrWhiteSpaceLongUrl_ThrowsValidationException(string? longUrl)
     {
         var ex = Assert.Throws<CreateShortUrlValidationException>(() =>
-            CreateShortUrlValidator.Validate(longUrl!, null));
+            CreateShortUrlValidator.Validate(longUrl!, null, null));
         Assert.Contains("required", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -33,7 +33,7 @@ public sealed class CreateShortUrlValidatorTests
     {
         var longUrl = "https://example.com/" + new string('a', CreateShortUrlValidator.MaxLongUrlLength);
         var ex = Assert.Throws<CreateShortUrlValidationException>(() =>
-            CreateShortUrlValidator.Validate(longUrl, null));
+            CreateShortUrlValidator.Validate(longUrl, null, null));
         Assert.Contains("2048", ex.Message);
     }
 
@@ -44,20 +44,20 @@ public sealed class CreateShortUrlValidatorTests
     public void Validate_InvalidUrl_ThrowsValidationException(string longUrl)
     {
         Assert.Throws<CreateShortUrlValidationException>(() =>
-            CreateShortUrlValidator.Validate(longUrl, null));
+            CreateShortUrlValidator.Validate(longUrl, null, null));
     }
 
     [Fact]
     public void Validate_ValidAlias_DoesNotThrow()
     {
-        CreateShortUrlValidator.Validate("https://example.com", "abc12");
+        CreateShortUrlValidator.Validate("https://example.com", "abc12", null);
     }
 
     [Fact]
     public void Validate_AliasTooLong_ThrowsValidationException()
     {
         var ex = Assert.Throws<CreateShortUrlValidationException>(() =>
-            CreateShortUrlValidator.Validate("https://example.com", "12345678"));
+            CreateShortUrlValidator.Validate("https://example.com", "12345678", null));
         Assert.Contains("1", ex.Message);
         Assert.Contains("7", ex.Message);
     }
@@ -66,7 +66,7 @@ public sealed class CreateShortUrlValidatorTests
     public void Validate_AliasWithInvalidCharacters_ThrowsValidationException()
     {
         var ex = Assert.Throws<CreateShortUrlValidationException>(() =>
-            CreateShortUrlValidator.Validate("https://example.com", "ab-cd"));
+            CreateShortUrlValidator.Validate("https://example.com", "ab-cd", null));
         Assert.Contains("alphanumeric", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -74,6 +74,14 @@ public sealed class CreateShortUrlValidatorTests
     public void Validate_AliasEmptyString_ThrowsValidationException()
     {
         Assert.Throws<CreateShortUrlValidationException>(() =>
-            CreateShortUrlValidator.Validate("https://example.com", ""));
+            CreateShortUrlValidator.Validate("https://example.com", "", null));
+    }
+
+    [Fact]
+    public void Validate_ExpiresAtInPast_ThrowsValidationException()
+    {
+        var ex = Assert.Throws<CreateShortUrlValidationException>(() =>
+            CreateShortUrlValidator.Validate("https://example.com", null, DateTime.UtcNow.AddMinutes(-1)));
+        Assert.Contains("ExpiresAt", ex.Message);
     }
 }

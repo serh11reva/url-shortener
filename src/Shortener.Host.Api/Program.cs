@@ -2,16 +2,11 @@ using System.Text.Json;
 using System.Threading.RateLimiting;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
-using Shortener.Application.Abstractions.Counter;
-using Shortener.Application.Abstractions.ShortUrls;
 using Shortener.Application.Features.Analytics;
 using Shortener.Application.Features.CreateShortUrl;
 using Shortener.Application.Features.Redirect;
-using Shortener.Infrastructure.Database;
-using Shortener.Infrastructure.Shared.Cache;
+using Shortener.Infrastructure.Database.DependencyInjection;
 using Shortener.Infrastructure.Shared.Configuration;
 using Shortener.Infrastructure.Shared.Health;
 using Shortener.Infrastructure.Shared.Infrastructure;
@@ -30,12 +25,7 @@ builder.AddServiceDefaults(configureHealthChecks: hcb =>
         .AddCheck<CosmosDbHealthCheck>("cosmos", tags: ["ready"]);
 });
 
-builder.Services.Configure<CosmosOptions>(
-    builder.Configuration.GetSection(CosmosOptions.SectionName));
-builder.Services.Configure<RedisOptions>(
-    builder.Configuration.GetSection(RedisOptions.SectionName));
-builder.Services.Configure<ShortenerOptions>(
-    builder.Configuration.GetSection(ShortenerOptions.SectionName));
+builder.Services.AddShortenerStorageOptions(builder.Configuration);
 
 builder.AddRedisClient("cache");
 builder.AddAzureCosmosClient("cosmos", configureClientOptions: options =>
@@ -51,47 +41,14 @@ builder.AddAzureCosmosClient("cosmos", configureClientOptions: options =>
         {
             var handler = new HttpClientHandler
             {
-                ServerCertificateCustomValidationCallback =
-                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
             };
             return new HttpClient(handler, disposeHandler: false);
         };
     }
 });
 
-builder.Services.AddSingleton<Container>(sp =>
-{
-    var client = sp.GetRequiredService<CosmosClient>();
-    var cosmosOpts = sp.GetRequiredService<IOptions<CosmosOptions>>().Value;
-    var env = sp.GetRequiredService<IHostEnvironment>();
-
-    if (env.IsDevelopment())
-    {
-        var db = client.CreateDatabaseIfNotExistsAsync(cosmosOpts.DatabaseId)
-            .GetAwaiter().GetResult();
-        var containerResponse = db.Database.CreateContainerIfNotExistsAsync(
-                new ContainerProperties(cosmosOpts.ContainerId, "/pk"))
-            .GetAwaiter().GetResult();
-
-        try
-        {
-            containerResponse.Container.CreateItemAsync(
-                    new { id = "shortCode", pk = "counter", last = 0L },
-                    new PartitionKey("counter"))
-                .GetAwaiter().GetResult();
-        }
-        catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Conflict)
-        {
-            // Counter document already seeded from a previous run
-        }
-    }
-
-    return client.GetContainer(cosmosOpts.DatabaseId, cosmosOpts.ContainerId);
-});
-builder.Services.AddSingleton<IShortUrlRepository, CosmosShortUrlRepository>();
-builder.Services.AddSingleton<ICounterAllocator, CosmosCounterAllocator>();
-builder.Services.AddSingleton<IShortCodeCounter, ShortCodeCounterService>();
-builder.Services.AddSingleton<IShortUrlCache, RedisShortUrlCache>();
+builder.Services.AddShortenerDataAccess();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -149,7 +106,7 @@ app.MapPost("/api/urls", async (
     IOptions<ShortenerOptions> options,
     CancellationToken cancellationToken) =>
 {
-    var command = new CreateShortUrlCommand(request.LongUrl, request.Alias);
+    var command = new CreateShortUrlCommand(request.LongUrl, request.Alias, request.ExpiresAt);
     var result = await mediator.Send(command, cancellationToken);
     var baseUrl = options.Value.BaseUrl?.TrimEnd('/');
     var response = new CreateShortUrlResult(result.ShortCode);

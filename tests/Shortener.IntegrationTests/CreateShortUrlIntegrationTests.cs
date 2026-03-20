@@ -57,4 +57,20 @@ public sealed class CreateShortUrlIntegrationTests : IClassFixture<ShortenerAppF
 
         Assert.Equal(HttpStatusCode.Conflict, response2.StatusCode);
     }
+
+    [Fact]
+    public async Task POST_api_urls_PastExpiration_Returns400()
+    {
+        var client = _fixture.Factory.CreateClient();
+
+        var request = new CreateShortUrlRequest(
+            "https://example.com/past",
+            null,
+            DateTime.UtcNow.AddMinutes(-5));
+        var response = await client.PostAsJsonAsync("/api/urls", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("ExpiresAt", content, StringComparison.OrdinalIgnoreCase);
+    }
 }

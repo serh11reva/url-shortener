@@ -13,21 +13,18 @@ public sealed class CreateShortUrlHandler : IRequestHandler<CreateShortUrlComman
     private static readonly SqidsEncoder<long> ShortCodeEncoder = new();
     private readonly IShortUrlRepository _repository;
     private readonly IShortCodeCounter _counter;
-    private readonly IShortUrlCache _cache;
 
     public CreateShortUrlHandler(
         IShortUrlRepository repository,
-        IShortCodeCounter counter,
-        IShortUrlCache cache)
+        IShortCodeCounter counter)
     {
         _repository = repository;
         _counter = counter;
-        _cache = cache;
     }
 
     public async Task<CreateShortUrlResult> Handle(CreateShortUrlCommand request, CancellationToken cancellationToken)
     {
-        CreateShortUrlValidator.Validate(request.LongUrl, request.Alias);
+        CreateShortUrlValidator.Validate(request.LongUrl, request.Alias, request.ExpiresAt);
 
         var longUrlHash = LongUrlHasher.ComputeHash(request.LongUrl);
         var existing = await _repository.FindExistingByLongUrlHashAndAliasAsync(
@@ -47,11 +44,10 @@ public sealed class CreateShortUrlHandler : IRequestHandler<CreateShortUrlComman
             longUrlHash,
             request.Alias,
             DateTime.UtcNow,
+            request.ExpiresAt,
             null);
 
         await _repository.AddAsync(entity, cancellationToken);
-
-        await _cache.SetAsync(shortCode, request.LongUrl, null, null, cancellationToken);
 
         return new CreateShortUrlResult(shortCode);
     }

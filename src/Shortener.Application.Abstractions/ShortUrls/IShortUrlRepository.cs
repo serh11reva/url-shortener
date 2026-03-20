@@ -11,4 +11,13 @@ public interface IShortUrlRepository
     Task<ShortUrl?> FindExistingByLongUrlHashAndAliasAsync(string longUrlHash, string? alias, CancellationToken cancellationToken = default);
 
     Task AddAsync(ShortUrl entity, CancellationToken cancellationToken = default);
+
+    Task MarkAccessedAsync(string shortCode, DateTime accessedAtUtc, CancellationToken cancellationToken = default);
+
+    Task RemoveByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<string>> DeleteExpiredAndInactiveAsync(
+        DateTime nowUtc,
+        TimeSpan inactiveFor,
+        CancellationToken cancellationToken = default);
 }
