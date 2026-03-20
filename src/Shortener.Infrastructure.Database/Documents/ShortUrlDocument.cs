@@ -24,4 +24,7 @@ internal sealed class ShortUrlDocument
 
     [JsonPropertyName("expiresAt")]
     public DateTime? ExpiresAt { get; set; }
+
+    [JsonPropertyName("lastAccessedAt")]
+    public DateTime? LastAccessedAt { get; set; }
 }

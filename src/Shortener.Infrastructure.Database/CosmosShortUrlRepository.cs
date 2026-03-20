@@ -62,4 +62,102 @@ public sealed class CosmosShortUrlRepository : IShortUrlRepository
         var doc = ShortUrlDocumentMapper.ToDocument(entity);
         await _container.CreateItemAsync(doc, new PartitionKey(doc.Pk), cancellationToken: cancellationToken);
     }
+
+    public async Task MarkAccessedAsync(string shortCode, DateTime accessedAtUtc, CancellationToken cancellationToken = default)
+    {
+        const string queryText = "SELECT c.id, c.pk FROM c WHERE c.id = @id";
+        var query = new QueryDefinition(queryText).WithParameter("@id", shortCode);
+        using var iterator = _container.GetItemQueryIterator<ShortCodeProjection>(
+            query,
+            requestOptions: new QueryRequestOptions
+            {
+                PartitionKey = new PartitionKey(shortCode),
+                MaxItemCount = 1
+            });
+
+        if (!iterator.HasMoreResults)
+        {
+            return;
+        }
+
+        var page = await iterator.ReadNextAsync(cancellationToken);
+        var item = page.FirstOrDefault();
+        if (item is null)
+        {
+            return;
+        }
+
+        await _container.PatchItemAsync<ShortUrlDocument>(
+            item.Id,
+            new PartitionKey(item.Pk),
+            [PatchOperation.Set("/lastAccessedAt", accessedAtUtc)],
+            cancellationToken: cancellationToken);
+    }
+
+    public async Task RemoveByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _container.DeleteItemAsync<ShortUrlDocument>(
+                shortCode,
+                new PartitionKey(shortCode),
+                cancellationToken: cancellationToken);
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            // Already removed.
+        }
+    }
+
+    public async Task<IReadOnlyCollection<string>> DeleteExpiredAndInactiveAsync(
+        DateTime nowUtc,
+        TimeSpan inactiveFor,
+        CancellationToken cancellationToken = default)
+    {
+        var inactiveCutoff = nowUtc - inactiveFor;
+        const string queryText = """
+            SELECT c.id, c.pk FROM c
+            WHERE c.pk != "counter"
+              AND (
+                (IS_DEFINED(c.expiresAt) AND NOT IS_NULL(c.expiresAt) AND c.expiresAt <= @nowUtc)
+                OR
+                ((NOT IS_DEFINED(c.lastAccessedAt) OR IS_NULL(c.lastAccessedAt)) AND c.createdAt <= @inactiveCutoff)
+                OR
+                (IS_DEFINED(c.lastAccessedAt) AND NOT IS_NULL(c.lastAccessedAt) AND c.lastAccessedAt <= @inactiveCutoff)
+              )
+            """;
+        var query = new QueryDefinition(queryText)
+            .WithParameter("@nowUtc", nowUtc)
+            .WithParameter("@inactiveCutoff", inactiveCutoff);
+
+        var deleted = new List<string>();
+        using var iterator = _container.GetItemQueryIterator<ShortCodeProjection>(query);
+        while (iterator.HasMoreResults)
+        {
+            var page = await iterator.ReadNextAsync(cancellationToken);
+            foreach (var item in page)
+            {
+                try
+                {
+                    await _container.DeleteItemAsync<ShortUrlDocument>(
+                        item.Id,
+                        new PartitionKey(item.Pk),
+                        cancellationToken: cancellationToken);
+                    deleted.Add(item.Id);
+                }
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    // Deleted concurrently.
+                }
+            }
+        }
+
+        return deleted;
+    }
+
+    private sealed class ShortCodeProjection
+    {
+        public string Id { get; init; } = string.Empty;
+        public string Pk { get; init; } = string.Empty;
+    }
 }

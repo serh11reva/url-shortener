@@ -15,7 +15,8 @@ public sealed class ShortUrlDocumentMapperTests
             "hash64chars________________________________________________",
             "myAlias",
             new DateTime(2025, 3, 19, 10, 0, 0, DateTimeKind.Utc),
-            new DateTime(2026, 3, 19, 10, 0, 0, DateTimeKind.Utc));
+            new DateTime(2026, 3, 19, 10, 0, 0, DateTimeKind.Utc),
+            new DateTime(2025, 3, 20, 10, 0, 0, DateTimeKind.Utc));
 
         var doc = ShortUrlDocumentMapper.ToDocument(entity);
 
@@ -26,6 +27,7 @@ public sealed class ShortUrlDocumentMapperTests
         Assert.Equal("myAlias", doc.Alias);
         Assert.Equal(new DateTime(2025, 3, 19, 10, 0, 0, DateTimeKind.Utc), doc.CreatedAt);
         Assert.Equal(new DateTime(2026, 3, 19, 10, 0, 0, DateTimeKind.Utc), doc.ExpiresAt);
+        Assert.Equal(new DateTime(2025, 3, 20, 10, 0, 0, DateTimeKind.Utc), doc.LastAccessedAt);
     }
 
     [Fact]
@@ -50,7 +52,8 @@ public sealed class ShortUrlDocumentMapperTests
             LongUrlHash = "a".PadRight(64, 'a'),
             Alias = "custom",
             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            ExpiresAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            ExpiresAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            LastAccessedAt = new DateTime(2024, 2, 2, 0, 0, 0, DateTimeKind.Utc)
         };
 
         var entity = ShortUrlDocumentMapper.ToDomain(doc);
@@ -61,6 +64,7 @@ public sealed class ShortUrlDocumentMapperTests
         Assert.Equal("custom", entity.Alias);
         Assert.Equal(new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc), entity.CreatedAt);
         Assert.Equal(new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), entity.ExpiresAt);
+        Assert.Equal(new DateTime(2024, 2, 2, 0, 0, 0, DateTimeKind.Utc), entity.LastAccessedAt);
     }
 
     [Fact]
@@ -103,5 +107,6 @@ public sealed class ShortUrlDocumentMapperTests
         Assert.Equal(original.Alias, roundTripped.Alias);
         Assert.Equal(original.CreatedAt, roundTripped.CreatedAt);
         Assert.Equal(original.ExpiresAt, roundTripped.ExpiresAt);
+        Assert.Equal(original.LastAccessedAt, roundTripped.LastAccessedAt);
     }
 }

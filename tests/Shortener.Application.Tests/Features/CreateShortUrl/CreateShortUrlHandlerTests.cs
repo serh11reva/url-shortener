@@ -16,8 +16,7 @@ public sealed class CreateShortUrlHandlerTests
     {
         var repo = new FakeShortUrlRepository();
         var counter = new FakeShortCodeCounter(1);
-        var cache = new FakeShortUrlCache();
-        var handler = new CreateShortUrlHandler(repo, counter, cache);
+        var handler = new CreateShortUrlHandler(repo, counter);
 
         var result = await handler.Handle(
             new CreateShortUrlCommand("https://example.com/foo", null),
@@ -29,6 +28,7 @@ public sealed class CreateShortUrlHandlerTests
         Assert.Equal("https://example.com/foo", repo.Added[0].LongUrl);
         Assert.NotNull(repo.Added[0].LongUrlHash);
         Assert.Equal(64, repo.Added[0].LongUrlHash!.Length);
+        Assert.Null(repo.Added[0].ExpiresAt);
     }
 
     [Fact]
@@ -36,8 +36,7 @@ public sealed class CreateShortUrlHandlerTests
     {
         var repo = new FakeShortUrlRepository();
         var counter = new FakeShortCodeCounter(999);
-        var cache = new FakeShortUrlCache();
-        var handler = new CreateShortUrlHandler(repo, counter, cache);
+        var handler = new CreateShortUrlHandler(repo, counter);
 
         var result = await handler.Handle(
             new CreateShortUrlCommand("https://example.com", "myLink"),
@@ -56,8 +55,7 @@ public sealed class CreateShortUrlHandlerTests
         var repo = new FakeShortUrlRepository();
         repo.GetByAliasReturns = new ShortUrl("taken", "https://other.com", "somehash", "taken", DateTime.UtcNow);
         var counter = new FakeShortCodeCounter(1);
-        var cache = new FakeShortUrlCache();
-        var handler = new CreateShortUrlHandler(repo, counter, cache);
+        var handler = new CreateShortUrlHandler(repo, counter);
 
         var ex = await Assert.ThrowsAsync<AliasAlreadyExistsException>(() =>
             handler.Handle(
@@ -75,8 +73,7 @@ public sealed class CreateShortUrlHandlerTests
         var repo = new FakeShortUrlRepository();
         repo.FindExistingByLongUrlHashAndAliasReturns = existing;
         var counter = new FakeShortCodeCounter(1);
-        var cache = new FakeShortUrlCache();
-        var handler = new CreateShortUrlHandler(repo, counter, cache);
+        var handler = new CreateShortUrlHandler(repo, counter);
 
         var result = await handler.Handle(
             new CreateShortUrlCommand("https://example.com", null),
@@ -92,8 +89,7 @@ public sealed class CreateShortUrlHandlerTests
     {
         var repo = new FakeShortUrlRepository();
         var counter = new FakeShortCodeCounter(1);
-        var cache = new FakeShortUrlCache();
-        var handler = new CreateShortUrlHandler(repo, counter, cache);
+        var handler = new CreateShortUrlHandler(repo, counter);
 
         await Assert.ThrowsAsync<CreateShortUrlValidationException>(() =>
             handler.Handle(
@@ -104,20 +100,33 @@ public sealed class CreateShortUrlHandlerTests
     }
 
     [Fact]
-    public async Task Handle_PrimesCache()
+    public async Task Handle_DoesNotPrimeCache_WhenUsingReadThrough()
     {
         var repo = new FakeShortUrlRepository();
         var counter = new FakeShortCodeCounter(42);
-        var cache = new FakeShortUrlCache();
-        var handler = new CreateShortUrlHandler(repo, counter, cache);
+        var handler = new CreateShortUrlHandler(repo, counter);
 
         await handler.Handle(
             new CreateShortUrlCommand("https://example.com", null),
             CancellationToken.None);
 
-        Assert.Single(cache.SetCalls);
-        Assert.Equal(ShortCodeEncoder.Encode(42), cache.SetCalls[0].shortCode);
-        Assert.Equal("https://example.com", cache.SetCalls[0].longUrl);
+        Assert.Single(repo.Added);
+    }
+
+    [Fact]
+    public async Task Handle_WithExpiresAt_PersistsAndCachesExpiry()
+    {
+        var repo = new FakeShortUrlRepository();
+        var counter = new FakeShortCodeCounter(7);
+        var handler = new CreateShortUrlHandler(repo, counter);
+        var expiresAt = DateTime.UtcNow.AddHours(2);
+
+        await handler.Handle(
+            new CreateShortUrlCommand("https://example.com/exp", null, expiresAt),
+            CancellationToken.None);
+
+        Assert.Single(repo.Added);
+        Assert.Equal(expiresAt, repo.Added[0].ExpiresAt);
     }
 
     private sealed class FakeShortUrlRepository : IShortUrlRepository
@@ -140,6 +149,15 @@ public sealed class CreateShortUrlHandlerTests
             Added.Add(entity);
             return Task.CompletedTask;
         }
+
+        public Task MarkAccessedAsync(string shortCode, DateTime accessedAtUtc, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+
+        public Task RemoveByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+
+        public Task<IReadOnlyCollection<string>> DeleteExpiredAndInactiveAsync(DateTime nowUtc, TimeSpan inactiveFor, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyCollection<string>>(Array.Empty<string>());
     }
 
     private sealed class FakeShortCodeCounter : IShortCodeCounter
@@ -159,24 +177,4 @@ public sealed class CreateShortUrlHandlerTests
         }
     }
 
-    private sealed class FakeShortUrlCache : IShortUrlCache
-    {
-        public List<(string shortCode, string longUrl, DateTime? expiresAt)> SetCalls { get; } = [];
-
-        public Task<CachedShortUrl?> GetAsync(string shortCode, CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult<CachedShortUrl?>(null);
-        }
-
-        public Task SetAsync(string shortCode, string longUrl, DateTime? expiresAt, TimeSpan? ttl, CancellationToken cancellationToken = default)
-        {
-            SetCalls.Add((shortCode, longUrl, expiresAt));
-            return Task.CompletedTask;
-        }
-
-        public Task RemoveAsync(string shortCode, CancellationToken cancellationToken = default)
-        {
-            return Task.CompletedTask;
-        }
-    }
 }

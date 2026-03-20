@@ -38,10 +38,10 @@ This document provides a prioritized list of work items for building the URL sho
 
 ## 4. Expiration & Cleanup
 
-- [ ] **4.1** Support optional expiration date on create (store in Cosmos DB); on redirect, return 404 if expired.
-- [ ] **4.2** Implement “delete if not accessed for one month”: tie to analytics (last-accessed); use Cosmos DB TTL or background job to remove inactive links (see ADR-003).
-- [ ] **4.3** Invalidate or omit Redis cache for expired/deleted links when detected.
-- [ ] **4.4** Tests: expiration date respected (404); TTL or job removes old items.
+- [x] **4.1** Support optional expiration date on create (store in Cosmos DB); on redirect, return 404 if expired.
+- [x] **4.2** Implement “delete if not accessed for one month”: tie to analytics (last-accessed); use Cosmos DB TTL or background job to remove inactive links (see ADR-003).
+- [x] **4.3** Invalidate or omit Redis cache for expired/deleted links when detected.
+- [x] **4.4** Tests: expiration date respected (404); TTL or job removes old items.
 
 ---
 

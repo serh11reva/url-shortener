@@ -8,8 +8,16 @@ public sealed class ShortUrl
     public string? Alias { get; }
     public DateTime CreatedAt { get; }
     public DateTime? ExpiresAt { get; }
+    public DateTime? LastAccessedAt { get; }
 
-    public ShortUrl(string shortCode, string longUrl, string longUrlHash, string? alias, DateTime createdAt, DateTime? expiresAt = null)
+    public ShortUrl(
+        string shortCode,
+        string longUrl,
+        string longUrlHash,
+        string? alias,
+        DateTime createdAt,
+        DateTime? expiresAt = null,
+        DateTime? lastAccessedAt = null)
     {
         ShortCode = shortCode;
         LongUrl = longUrl;
@@ -17,5 +25,6 @@ public sealed class ShortUrl
         LongUrlHash = longUrlHash;
         CreatedAt = createdAt;
         ExpiresAt = expiresAt;
+        LastAccessedAt = lastAccessedAt;
     }
 }

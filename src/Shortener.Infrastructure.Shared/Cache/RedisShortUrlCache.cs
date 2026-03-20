@@ -8,7 +8,7 @@ public sealed class RedisShortUrlCache : IShortUrlCache
 {
     private readonly IConnectionMultiplexer _redis;
     private const string KeyPrefix = "short:";
-    private static readonly TimeSpan DefaultTtl = TimeSpan.FromHours(12);
+    private static readonly TimeSpan DefaultTtl = TimeSpan.FromHours(24);
 
     public RedisShortUrlCache(IConnectionMultiplexer redis)
     {
@@ -33,23 +33,29 @@ public sealed class RedisShortUrlCache : IShortUrlCache
             return null;
         }
 
+        // Sliding expiration: keep recently accessed links warm in cache.
+        // Never extend beyond absolute URL expiration, when present.
+        var slidingExpiry = ResolveExpiry(entry.ExpiresAt);
+        if (slidingExpiry > TimeSpan.Zero)
+        {
+            await db.KeyExpireAsync(key, slidingExpiry);
+        }
+
         return new CachedShortUrl(entry.LongUrl, entry.ExpiresAt);
     }
 
     public async Task SetAsync(
         string shortCode,
-        string longUrl,
-        DateTime? expiresAt,
-        TimeSpan? ttl = null,
+        CachedShortUrl value,
         CancellationToken cancellationToken = default)
     {
         var db = _redis.GetDatabase();
         var key = KeyPrefix + shortCode;
-        var expiry = ResolveExpiry(ttl, expiresAt);
+        var expiry = ResolveExpiry(value.ExpiresAt);
         var entry = new CachedShortUrlEntry
         {
-            LongUrl = longUrl,
-            ExpiresAt = expiresAt
+            LongUrl = value.LongUrl,
+            ExpiresAt = value.ExpiresAt
         };
         var payload = JsonSerializer.Serialize(entry);
         await db.StringSetAsync(key, payload, expiry);
@@ -62,13 +68,8 @@ public sealed class RedisShortUrlCache : IShortUrlCache
         await db.KeyDeleteAsync(key);
     }
 
-    private static TimeSpan ResolveExpiry(TimeSpan? ttl, DateTime? expiresAt)
+    private static TimeSpan ResolveExpiry(DateTime? expiresAt)
     {
-        if (ttl.HasValue)
-        {
-            return ttl.Value;
-        }
-
         if (expiresAt is null)
         {
             return DefaultTtl;

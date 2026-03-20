@@ -6,7 +6,7 @@ var storage = builder
     .RunAsEmulator();
 var cosmos = builder
     .AddAzureCosmosDB("cosmos-db")
-    .RunAsEmulator(e => e.WithLifetime(ContainerLifetime.Persistent).WithDataVolume("cosmos-data"));
+    .RunAsEmulator();
 var database = cosmos.AddCosmosDatabase("cosmos", databaseName: "shortener");
 
 builder.AddProject<Projects.Shortener_Host_Api>("api")
