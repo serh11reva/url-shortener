@@ -8,7 +8,7 @@ A high-performance, cloud-native URL shortener built with .NET 10 and Vue 3. Sho
 
 - **Shorten URLs** — Submit a long URL; get a unique short code (up to 7 characters, Base62). Optional custom alias and idempotent creation (same URL + alias returns existing short link).
 - **Fast redirects** — Redis cache-aside keeps redirects under 100ms; fallback to Cosmos DB on cache miss. Expired or missing links return 404.
-- **Expiration & cleanup** — Optional per-link expiration date; links not accessed for one month can be removed (Cosmos DB TTL or background job).
+- **Expiration & cleanup** — Optional per-link expiration date; links not accessed for one month can be removed (Cosmos DB TTL plus scheduled cleanup via Azure Functions timer trigger).
 - **Analytics** — Click count and last-accessed timestamp, updated asynchronously so the redirect path stays write-free and fast.
 - **Abuse protection** — Rate limiting and throttling per IP; RFC 7807 ProblemDetails for consistent error responses.
 
@@ -42,7 +42,9 @@ From the repository root:
 dotnet run --project src/Shortener.AppHost
 ```
 
-Aspire starts the API, Redis, and Cosmos DB (or emulators). Open the Aspire dashboard URL shown in the console to inspect services and logs.
+Aspire starts the API, Redis, Cosmos DB emulator, Azure Storage emulator (Azurite), and the cleanup Azure Functions host (`Shortener.Host.Functions`). Open the Aspire dashboard URL shown in the console to inspect services and logs.
+
+The cleanup function schedule is configured in `src/Shortener.Host.Functions/local.settings.json` using `CleanupSchedule` (development default: once per minute).
 
 ### Run with Docker Compose
 
@@ -64,6 +66,7 @@ Connection strings and keys (Cosmos DB, Redis) are configured via Aspire or envi
 src/
 ├── Shortener.AppHost/              # Aspire host (orchestrates API, Redis, Cosmos)
 ├── Shortener.Host.Api/             # Minimal API (redirect, create, analytics)
+├── Shortener.Host.Functions/       # Azure Functions timer host for expiration/cleanup jobs
 ├── Shortener.ServiceDefaults/      # Shared Aspire, OpenTelemetry, resilience
 ├── Shortener.Domain/               # Domain models and logic
 ├── Shortener.Application/          # CQRS handlers (MediatR), vertical slices
@@ -87,6 +90,8 @@ docs/                               # Architecture, features, ADRs, tasks
 | Features (shortening, redirect, analytics, security)        | [docs/features/index.md](docs/features/index.md)                                            |
 | Architecture decision records                               | [docs/decisions.md](docs/decisions.md)                                                      |
 | Task list and definition of done                            | [docs/tasks.md](docs/tasks.md) · [docs/definition-of-done.md](docs/definition-of-done.md)   |
+
+Task 4 (`docs/tasks.md` - Expiration & Cleanup) is implemented using the `Shortener.Host.Functions` timer-trigger host for scheduled cleanup execution.
 
 ---
 

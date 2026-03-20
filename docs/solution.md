@@ -8,7 +8,7 @@ This system is ann URL shortener system designed to demonstrate senior-level sof
 
 1. **Shorten URL:** A user submits a long URL (and optional custom alias). The system generates a unique short code (up to 7 characters) from a counter (Base62), stores the mapping in Cosmos DB, and caches it in Redis. Creation can be made idempotent (same long URL + alias returns existing short URL).
 2. **Redirect:** A user accesses the short URL. The system checks Redis first. If found, it redirects within the target latency (<100ms). If not, it queries Cosmos DB, caches the result, and redirects. Expired or missing links return 404.
-3. **Expiration & Cleanup:** Optional per-link expiration date; expired links return 404. Links not accessed for one month are deleted (e.g., via Cosmos DB TTL or background job).
+3. **Expiration & Cleanup:** Optional per-link expiration date; expired links return 404. Links not accessed for one month are deleted via Cosmos DB TTL and/or a scheduled Azure Functions cleanup worker (timer trigger).
 4. **Analytics:** Redirection events trigger asynchronous updates (e.g., channel/queue) to record click count and last-accessed timestamp in Cosmos DB, keeping the redirect path fast and accepting eventual consistency for analytics.
 
 ## Tech Stack
@@ -20,6 +20,7 @@ This system is ann URL shortener system designed to demonstrate senior-level sof
 | Database | Azure Cosmos DB (NoSQL API) |
 | Cache | Redis |
 | Local orchestration | .NET Aspire |
+| Background jobs | Azure Functions (timer-trigger, isolated worker) |
 | Deployment | Docker Compose; each service has its own Dockerfile |
 | IaC | Modular Azure Bicep (target: Azure) |
 | CI/CD | Pipelines for build, test, Docker images, Bicep deployment, app deployment |

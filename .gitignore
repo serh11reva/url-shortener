@@ -46,6 +46,7 @@ coverage*.xml
 !.env.example
 *.env
 appsettings.*.local.json
+**/local.settings.json
 secrets.json
 *.pfx
 

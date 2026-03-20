@@ -2,6 +2,7 @@
   <Folder Name="/src/" />
   <Folder Name="/src/01 Hosts/">
     <Project Path="src/Shortener.Host.Api/Shortener.Host.Api.csproj" />
+    <Project Path="src/Shortener.Host.Functions/Shortener.Host.Functions.csproj" />
   </Folder>
   <Folder Name="/src/02 Application/">
     <Project Path="src/Shortener.Application.Abstractions/Shortener.Application.Abstractions.csproj" Id="2ce2b5a8-20f7-47bb-94ad-420d408a14b0" />
