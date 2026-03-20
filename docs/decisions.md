@@ -117,3 +117,13 @@
 **Decision:** Use **Minimal API** (ASP.NET Core minimal hosting). Endpoints are defined with `MapGet`, `MapPost`, etc. Route handlers dispatch to MediatR (commands/queries); business logic stays in handlers, not in endpoint lambdas. Do not add MVC controllers.
 
 **Rationale:** Minimal API keeps the API surface explicit and lightweight; it fits vertical slices and CQRS (thin endpoints, MediatR for behavior). Good fit for a small, focused API and for portfolio clarity.
+
+---
+
+## ADR-013: Cleanup Execution Host
+
+**Context:** Task 4 (Expiration & Cleanup) needs a scheduled execution mechanism to remove inactive links and apply expiration cleanup outside the redirect request path.
+
+**Decision:** Use an **Azure Functions** project (`Shortener.Host.Functions`) with a **TimerTrigger** as the cleanup host. The function runs on a schedule and orchestrates cleanup logic (TTL reconciliation, inactive-link deletion, cache invalidation as needed). In local development, it is orchestrated by Aspire with Azurite host storage.
+
+**Rationale:** Timer-triggered Functions are a managed, cloud-aligned way to run scheduled jobs without introducing a dedicated worker service runtime. This keeps the API path lean, supports independent scaling/deployment of cleanup behavior, and aligns with Azure-first deployment targets.
