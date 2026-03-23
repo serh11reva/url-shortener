@@ -14,6 +14,7 @@ using Shortener.Infrastructure.Shared.Infrastructure;
 using Shortener.ServiceDefaults;
 using StackExchange.Redis;
 using Microsoft.Azure.Cosmos;
+using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,7 +30,6 @@ builder.AddServiceDefaults(configureHealthChecks: hcb =>
 builder.Services.AddShortenerStorageOptions(builder.Configuration);
 
 builder.AddRedisClient("cache");
-builder.AddAzureServiceBusClient("messaging");
 
 builder.AddAzureCosmosClient("cosmos", configureClientOptions: options =>
 {
@@ -98,6 +98,10 @@ app.MapDefaultEndpoints();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/openapi/v1.json", "URL Shortener API");
+    });
 }
 
 app.UseHttpsRedirection();
