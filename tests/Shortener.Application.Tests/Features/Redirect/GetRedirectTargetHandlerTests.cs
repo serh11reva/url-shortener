@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.Extensions.Logging.Abstractions;
 using Shortener.Application.Abstractions.ShortUrls;
 using Shortener.Application.Features.Analytics;
 using Shortener.Application.Features.Redirect;
@@ -21,7 +22,8 @@ public sealed class GetRedirectTargetHandlerTests
             repository,
             cache,
             new FakeLifecyclePolicy(),
-            publisher);
+            publisher,
+            NullLogger<GetRedirectTargetHandler>.Instance);
 
         var result = await handler.Handle(new GetRedirectTargetQuery("abc123"), CancellationToken.None);
 
@@ -45,7 +47,8 @@ public sealed class GetRedirectTargetHandlerTests
             repository,
             cache,
             new FakeLifecyclePolicy(),
-            publisher);
+            publisher,
+            NullLogger<GetRedirectTargetHandler>.Instance);
 
         var result = await handler.Handle(new GetRedirectTargetQuery("code01"), CancellationToken.None);
 
@@ -75,7 +78,8 @@ public sealed class GetRedirectTargetHandlerTests
             repository,
             cache,
             new FakeLifecyclePolicy(),
-            publisher);
+            publisher,
+            NullLogger<GetRedirectTargetHandler>.Instance);
 
         var result = await handler.Handle(new GetRedirectTargetQuery("expired1"), CancellationToken.None);
 
@@ -105,7 +109,8 @@ public sealed class GetRedirectTargetHandlerTests
             repository,
             cache,
             new FakeLifecyclePolicy(),
-            publisher);
+            publisher,
+            NullLogger<GetRedirectTargetHandler>.Instance);
 
         var result = await handler.Handle(new GetRedirectTargetQuery("inactive1"), CancellationToken.None);
 
