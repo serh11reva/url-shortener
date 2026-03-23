@@ -62,7 +62,8 @@ public sealed class ShortenerAppFixture : IAsyncLifetime, IDisposable
                     ReplaceService<IConnectionMultiplexer>(services,
                         _ => ConnectionMultiplexer.Connect(redisConnectionString));
 
-                    ReplaceService<IQueueStore>(services, _ => new IntegrationTestQueueStore());
+                    ReplaceService<IQueueStore>(services,
+                        sp => new IntegrationTestQueueStore(sp.GetRequiredService<IServiceScopeFactory>()));
                 });
             });
     }

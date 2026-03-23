@@ -51,7 +51,7 @@ This document provides a prioritized list of work items for building the URL sho
 - [x] **5.2** Analytics handler: update Cosmos DB with click count and last-accessed timestamp (eventual consistency). *(Azure Function consumer + `RecordClick`.)*
 - [x] **5.3** Expose analytics read (e.g., GET /api/urls/{shortCode}/stats): number of clicks, last accessed timestamp.
 - [x] **5.4** Use last-accessed to drive “not accessed for 1 month” deletion/TTL (align with 4.2).
-- [ ] **5.5** Tests: unit for handler; integration for eventual consistency; E2E for click count visibility.
+- [x] **5.5** Tests: unit for handler; integration for eventual consistency; E2E for click count visibility.
 
 ---
 
