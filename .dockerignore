@@ -1,0 +1,16 @@
+**/.git
+**/.gitignore
+**/.vs
+**/.vscode
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/coverage
+**/.nyc_output
+**/*.md
+!Directory.Packages.props
+**/Dockerfile*
+**/docker-compose*
+**/*.dockerignore
+**/.editorconfig

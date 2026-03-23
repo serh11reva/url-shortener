@@ -49,11 +49,17 @@ The cleanup function schedule is configured in `src/Shortener.Host.Functions/loc
 
 ### Run with Docker Compose
 
-When the stack is containerized (see [tasks](docs/tasks.md)):
+Run the entire solution in containers (API, frontend, Redis, Cosmos DB emulator, Azure Service Bus emulator):
 
 ```bash
 docker compose up --build
 ```
+
+- **Frontend:** http://localhost:3000
+- **API:** http://localhost:8080 (Swagger at `/swagger` in Development)
+- **Cosmos DB Data Explorer:** http://localhost:1234 (when Cosmos emulator is running)
+
+Short links resolve via the frontend origin (e.g. `http://localhost:3000/{shortCode}`). The nginx proxy forwards `/api` and short-code redirects to the API.
 
 ### Environment variables
 

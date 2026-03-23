@@ -66,9 +66,9 @@ This document provides a prioritized list of work items for building the URL sho
 
 ## 7. Containers & Deployment
 
-- [ ] **7.1** Dockerfile for API (multi-stage build).
-- [ ] **7.2** Dockerfile for frontend (build static assets; serve via nginx or API).
-- [ ] **7.3** Docker Compose: API, Redis, Cosmos DB (or emulator), frontend (if separate).
+- [x] **7.1** Dockerfile for API (multi-stage build).
+- [x] **7.2** Dockerfile for frontend (build static assets; serve via nginx or API).
+- [x] **7.3** Docker Compose: API, Redis, Cosmos DB, frontend.
 - [ ] **7.4** Modular Bicep: resource group, Cosmos DB, Redis, App Service or Container Apps; parameterized for environment.
 
 ---
