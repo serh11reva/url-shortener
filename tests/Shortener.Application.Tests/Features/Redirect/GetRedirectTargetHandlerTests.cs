@@ -1,4 +1,6 @@
+using MediatR;
 using Shortener.Application.Abstractions.ShortUrls;
+using Shortener.Application.Features.Analytics;
 using Shortener.Application.Features.Redirect;
 using Shortener.Domain;
 
@@ -14,34 +16,44 @@ public sealed class GetRedirectTargetHandlerTests
         {
             CachedResult = new CachedShortUrl("https://example.com/cache-hit", null)
         };
-        var handler = new GetRedirectTargetHandler(repository, cache, new FakeLifecyclePolicy());
+        var publisher = new FakePublisher();
+        var handler = new GetRedirectTargetHandler(
+            repository,
+            cache,
+            new FakeLifecyclePolicy(),
+            publisher);
 
         var result = await handler.Handle(new GetRedirectTargetQuery("abc123"), CancellationToken.None);
 
         Assert.True(result.Found);
         Assert.Equal("https://example.com/cache-hit", result.LongUrl);
         Assert.Equal(0, repository.GetByShortCodeCallCount);
-        Assert.Single(repository.MarkAccessedCalls);
-        Assert.Equal("abc123", repository.MarkAccessedCalls[0]);
+        Assert.Single(publisher.Notifications);
+        Assert.Equal("abc123", ((ClickTrackedNotification)publisher.Notifications[0]).ShortCode);
     }
 
     [Fact]
-    public async Task Handle_CacheMiss_RepositoryHit_PrimesCacheAndReturnsRedirect()
+    public async Task Handle_CacheMiss_RepositoryHit_ReturnsRedirect()
     {
         var repository = new FakeShortUrlRepository
         {
             GetByShortCodeResult = new ShortUrl("code01", "https://example.com/db", "hash", null, DateTime.UtcNow)
         };
         var cache = new FakeShortUrlCache();
-        var handler = new GetRedirectTargetHandler(repository, cache, new FakeLifecyclePolicy());
+        var publisher = new FakePublisher();
+        var handler = new GetRedirectTargetHandler(
+            repository,
+            cache,
+            new FakeLifecyclePolicy(),
+            publisher);
 
         var result = await handler.Handle(new GetRedirectTargetQuery("code01"), CancellationToken.None);
 
         Assert.True(result.Found);
         Assert.Equal("https://example.com/db", result.LongUrl);
-        Assert.Single(cache.SetCalls);
-        Assert.Equal("code01", cache.SetCalls[0].shortCode);
-        Assert.Single(repository.MarkAccessedCalls);
+        Assert.Empty(cache.SetCalls);
+        Assert.Single(publisher.Notifications);
+        Assert.Equal("code01", ((ClickTrackedNotification)publisher.Notifications[0]).ShortCode);
     }
 
     [Fact]
@@ -58,12 +70,17 @@ public sealed class GetRedirectTargetHandlerTests
                 DateTime.UtcNow.AddMinutes(-5))
         };
         var cache = new FakeShortUrlCache();
-        var handler = new GetRedirectTargetHandler(repository, cache, new FakeLifecyclePolicy());
+        var publisher = new FakePublisher();
+        var handler = new GetRedirectTargetHandler(
+            repository,
+            cache,
+            new FakeLifecyclePolicy(),
+            publisher);
 
         var result = await handler.Handle(new GetRedirectTargetQuery("expired1"), CancellationToken.None);
 
         Assert.False(result.Found);
-        Assert.Empty(cache.SetCalls);
+        Assert.Empty(publisher.Notifications);
         Assert.Single(repository.RemovedCalls);
         Assert.Single(cache.RemovedCalls);
     }
@@ -83,20 +100,43 @@ public sealed class GetRedirectTargetHandlerTests
                 DateTime.UtcNow.AddDays(-31))
         };
         var cache = new FakeShortUrlCache();
-        var handler = new GetRedirectTargetHandler(repository, cache, new FakeLifecyclePolicy());
+        var publisher = new FakePublisher();
+        var handler = new GetRedirectTargetHandler(
+            repository,
+            cache,
+            new FakeLifecyclePolicy(),
+            publisher);
 
         var result = await handler.Handle(new GetRedirectTargetQuery("inactive1"), CancellationToken.None);
 
         Assert.False(result.Found);
+        Assert.Empty(publisher.Notifications);
         Assert.Single(repository.RemovedCalls);
         Assert.Single(cache.RemovedCalls);
+    }
+
+    private sealed class FakePublisher : IPublisher
+    {
+        public List<object> Notifications { get; } = [];
+
+        public Task Publish(object notification, CancellationToken cancellationToken = default)
+        {
+            Notifications.Add(notification);
+            return Task.CompletedTask;
+        }
+
+        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+            where TNotification : INotification
+        {
+            Notifications.Add(notification);
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class FakeShortUrlRepository : IShortUrlRepository
     {
         public int GetByShortCodeCallCount { get; private set; }
         public ShortUrl? GetByShortCodeResult { get; set; }
-        public List<string> MarkAccessedCalls { get; } = [];
         public List<string> RemovedCalls { get; } = [];
 
         public Task<ShortUrl?> GetByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default)
@@ -114,11 +154,8 @@ public sealed class GetRedirectTargetHandlerTests
         public Task AddAsync(ShortUrl entity, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
 
-        public Task MarkAccessedAsync(string shortCode, DateTime accessedAtUtc, CancellationToken cancellationToken = default)
-        {
-            MarkAccessedCalls.Add(shortCode);
-            return Task.CompletedTask;
-        }
+        public Task RecordClickAsync(string shortCode, DateTime accessedAtUtc, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
 
         public Task RemoveByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default)
         {

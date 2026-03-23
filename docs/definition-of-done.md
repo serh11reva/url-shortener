@@ -19,7 +19,7 @@ Every feature, task, or work item must satisfy the following before it is consid
 
 - [ ] **Acceptance criteria:** All acceptance criteria for the feature (from [features/](./features/index.md) and linked feature docs) are met.
 - [ ] **Edge cases:** Invalid input returns 400; not found/expired returns 404; rate limit returns 429.
-- [ ] **Performance:** Redirect path meets the <100ms target (Redis cache-aside); analytics do not block redirects.
+- [ ] **Performance:** Redirect path meets the <100ms target where Redis is primed (cache-aside reads); Cosmos fallback on miss is acceptable when not cached; analytics do not block redirects.
 
 ---
 

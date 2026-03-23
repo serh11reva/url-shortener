@@ -7,7 +7,7 @@ This system is ann URL shortener system designed to demonstrate senior-level sof
 ## Core Workflows
 
 1. **Shorten URL:** A user submits a long URL (and optional custom alias). The system generates a unique short code (up to 7 characters) from a counter (Base62), stores the mapping in Cosmos DB, and caches it in Redis. Creation can be made idempotent (same long URL + alias returns existing short URL).
-2. **Redirect:** A user accesses the short URL. The system checks Redis first. If found, it redirects within the target latency (<100ms). If not, it queries Cosmos DB, caches the result, and redirects. Expired or missing links return 404.
+2. **Redirect:** A user accesses the short URL. The system checks Redis first. If found, it redirects within the target latency (<100ms). If not, it queries Cosmos DB and redirects **without** populating Redis on that path (read-through). Expired or missing links return 404.
 3. **Expiration & Cleanup:** Optional per-link expiration date; expired links return 404. Links not accessed for one month are deleted via Cosmos DB TTL and/or a scheduled Azure Functions cleanup worker (timer trigger).
 4. **Analytics:** Redirection events trigger asynchronous updates (e.g., channel/queue) to record click count and last-accessed timestamp in Cosmos DB, keeping the redirect path fast and accepting eventual consistency for analytics.
 
@@ -63,7 +63,7 @@ This system is ann URL shortener system designed to demonstrate senior-level sof
 
 ## Scalability & Performance
 
-- **Read optimization:** Cache redirects aggressively in Redis (cache-aside).
+- **Read optimization:** Redis cache-aside for redirects (reads only on redirect path; create may prime Redis).
 - **Write strategy:** Accept eventual consistency for analytics; keep redirect path write-free.
 - **Horizontal scaling:** Stateless API; counter allocation strategy for horizontal scaling of short-code generation.
 

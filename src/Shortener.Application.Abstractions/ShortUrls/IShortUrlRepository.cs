@@ -12,7 +12,7 @@ public interface IShortUrlRepository
 
     Task AddAsync(ShortUrl entity, CancellationToken cancellationToken = default);
 
-    Task MarkAccessedAsync(string shortCode, DateTime accessedAtUtc, CancellationToken cancellationToken = default);
+    Task RecordClickAsync(string shortCode, DateTime accessedAtUtc, CancellationToken cancellationToken = default);
 
     Task RemoveByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default);
 

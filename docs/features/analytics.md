@@ -11,7 +11,7 @@ Track usage of short links: number of clicks and last-accessed timestamp. Data i
 
 ## Rules
 
-- **No writes on redirect path:** Recording a click must not block the redirect. Use in-process channel, queue, or background task to hand off “record click” work; handler updates Cosmos DB asynchronously.
+- **No writes on redirect path:** Recording a click must not block the redirect. The API publishes a small JSON message to **Azure Service Bus** (queue); an **Azure Function** consumes messages and updates Cosmos DB asynchronously.
 - **Eventual consistency:** Accept that click count and last-accessed may lag by seconds (or more under load). API that returns analytics (e.g., GET /api/urls/{shortCode}/stats) reads from Cosmos DB.
 - **Last-accessed and inactivity:** Last-accessed timestamp is used to implement “delete if not accessed for one month” (see [Expiration](./expiration.md)); ensure analytics handler updates this field (and optionally TTL) on each click.
 - Store data in Cosmos DB (same container or dedicated; design for read and batch/eventual write patterns).
@@ -29,7 +29,7 @@ Track usage of short links: number of clicks and last-accessed timestamp. Data i
 ## Dependencies
 
 - Cosmos DB (persist click count and last-accessed).
-- Async pipeline (channel/queue + handler); MediatR or similar for fire-and-forget or background command.
+- Azure Service Bus queue; Azure Functions Service Bus trigger; MediatR `RecordClick` command handler.
 - [Redirects](./redirects.md) — triggers “record click” on each redirect.
 - [Expiration](./expiration.md) — last-accessed drives inactivity deletion.
 

@@ -29,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Shortener.Application.Abstractions\Shortener.Application.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\Shortener.Host.Api\Shortener.Host.Api.csproj" />
   </ItemGroup>
 

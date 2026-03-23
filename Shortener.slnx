@@ -12,6 +12,7 @@
   </Folder>
   <Folder Name="/src/03 Infrastructure/">
     <Project Path="src/Shortener.Infrastructure.Database/Shortener.Infrastructure.Database.csproj" Id="7622eae0-7ba3-456a-9125-730a4e84b00c" />
+    <Project Path="src/Shortener.Infrastructure.ServiceBus/Shortener.Infrastructure.ServiceBus.csproj" />
     <Project Path="src/Shortener.Infrastructure.Shared/Shortener.Infrastructure.Shared.csproj" Id="100c9a69-932d-436f-b3c5-c956ee12239a" />
   </Folder>
   <Folder Name="/tests/">

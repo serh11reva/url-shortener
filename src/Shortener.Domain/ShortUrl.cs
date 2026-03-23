@@ -10,6 +10,8 @@ public sealed class ShortUrl
     public DateTime? ExpiresAt { get; }
     public DateTime? LastAccessedAt { get; }
 
+    public long ClickCount { get; }
+
     public ShortUrl(
         string shortCode,
         string longUrl,
@@ -17,7 +19,8 @@ public sealed class ShortUrl
         string? alias,
         DateTime createdAt,
         DateTime? expiresAt = null,
-        DateTime? lastAccessedAt = null)
+        DateTime? lastAccessedAt = null,
+        long clickCount = 0)
     {
         ShortCode = shortCode;
         LongUrl = longUrl;
@@ -26,5 +29,6 @@ public sealed class ShortUrl
         CreatedAt = createdAt;
         ExpiresAt = expiresAt;
         LastAccessedAt = lastAccessedAt;
+        ClickCount = clickCount;
     }
 }

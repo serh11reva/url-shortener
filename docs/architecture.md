@@ -17,16 +17,20 @@ graph TD
     Client[Client Browser / Vue 3 App] -->|HTTP POST /api/urls| API[.NET 10 Minimal API]
     Client -->|HTTP GET /{shortCode}| API
 
-    API -->|Cache-Aside Read/Write| Redis[(Redis)]
-    API -->|Read/Write| Cosmos[(Cosmos DB)]
+    API -->|Cache-aside reads; create may prime| Redis[(Redis)]
+    API -->|Read / Create| Cosmos[(Cosmos DB)]
+    API -.->|Publish click message| SB[(Azure Service Bus)]
 
-    API -.->|Async / In-Process Channel| Analytics[Analytics Handler]
-    Analytics -->|Batch / Eventual Writes| Cosmos
+    SB --> Functions[Azure Functions Worker]
+    Functions -->|RecordClick| Cosmos
+
+    API -->|GET stats| Cosmos
 ```
 
 ## Deployment
 
-- **Local:** .NET Aspire orchestrates API, Redis, Cosmos DB (or emulators).
+- **Local:** .NET Aspire orchestrates API, Redis, Cosmos DB (or emulators), Azure Service Bus emulator, and the Functions host (cleanup timer + click consumer).
+- **Functions host DI:** The worker uses MediatR with the Application assembly, so notification handlers (e.g. click publish) are registered there too. It must register **`ServiceBusClient`** (Aspire connection `messaging`) and **`IQueueStore`** the same way as the API so the container validates at startup, even though only `RecordClick` runs in this process.
 - **Containers:** Docker Compose for multi-service run; each service (API, frontend if served separately) has its own Dockerfile.
 - **Cloud:** Azure; infrastructure defined with modular Bicep (e.g., App Service or Container Apps, Cosmos DB, Redis, resource groups).
 

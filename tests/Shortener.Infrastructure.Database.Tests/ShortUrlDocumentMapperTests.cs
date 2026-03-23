@@ -16,7 +16,8 @@ public sealed class ShortUrlDocumentMapperTests
             "myAlias",
             new DateTime(2025, 3, 19, 10, 0, 0, DateTimeKind.Utc),
             new DateTime(2026, 3, 19, 10, 0, 0, DateTimeKind.Utc),
-            new DateTime(2025, 3, 20, 10, 0, 0, DateTimeKind.Utc));
+            new DateTime(2025, 3, 20, 10, 0, 0, DateTimeKind.Utc),
+            clickCount: 7);
 
         var doc = ShortUrlDocumentMapper.ToDocument(entity);
 
@@ -28,6 +29,7 @@ public sealed class ShortUrlDocumentMapperTests
         Assert.Equal(new DateTime(2025, 3, 19, 10, 0, 0, DateTimeKind.Utc), doc.CreatedAt);
         Assert.Equal(new DateTime(2026, 3, 19, 10, 0, 0, DateTimeKind.Utc), doc.ExpiresAt);
         Assert.Equal(new DateTime(2025, 3, 20, 10, 0, 0, DateTimeKind.Utc), doc.LastAccessedAt);
+        Assert.Equal(7L, doc.ClickCount);
     }
 
     [Fact]
@@ -39,6 +41,7 @@ public sealed class ShortUrlDocumentMapperTests
 
         Assert.Null(doc.Alias);
         Assert.Null(doc.ExpiresAt);
+        Assert.Equal(0L, doc.ClickCount);
     }
 
     [Fact]
@@ -53,7 +56,8 @@ public sealed class ShortUrlDocumentMapperTests
             Alias = "custom",
             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             ExpiresAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            LastAccessedAt = new DateTime(2024, 2, 2, 0, 0, 0, DateTimeKind.Utc)
+            LastAccessedAt = new DateTime(2024, 2, 2, 0, 0, 0, DateTimeKind.Utc),
+            ClickCount = 42
         };
 
         var entity = ShortUrlDocumentMapper.ToDomain(doc);
@@ -65,6 +69,7 @@ public sealed class ShortUrlDocumentMapperTests
         Assert.Equal(new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc), entity.CreatedAt);
         Assert.Equal(new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), entity.ExpiresAt);
         Assert.Equal(new DateTime(2024, 2, 2, 0, 0, 0, DateTimeKind.Utc), entity.LastAccessedAt);
+        Assert.Equal(42L, entity.ClickCount);
     }
 
     [Fact]
@@ -108,5 +113,6 @@ public sealed class ShortUrlDocumentMapperTests
         Assert.Equal(original.CreatedAt, roundTripped.CreatedAt);
         Assert.Equal(original.ExpiresAt, roundTripped.ExpiresAt);
         Assert.Equal(original.LastAccessedAt, roundTripped.LastAccessedAt);
+        Assert.Equal(original.ClickCount, roundTripped.ClickCount);
     }
 }

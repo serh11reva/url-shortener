@@ -22,7 +22,8 @@ internal static class ShortUrlDocumentMapper
             Alias = entity.Alias,
             CreatedAt = entity.CreatedAt,
             ExpiresAt = entity.ExpiresAt,
-            LastAccessedAt = entity.LastAccessedAt
+            LastAccessedAt = entity.LastAccessedAt,
+            ClickCount = entity.ClickCount
         };
     }
 
@@ -31,6 +32,6 @@ internal static class ShortUrlDocumentMapper
     /// </summary>
     internal static ShortUrl ToDomain(ShortUrlDocument doc)
     {
-        return new ShortUrl(doc.Id, doc.LongUrl, doc.LongUrlHash, doc.Alias, doc.CreatedAt, doc.ExpiresAt, doc.LastAccessedAt);
+        return new ShortUrl(doc.Id, doc.LongUrl, doc.LongUrlHash, doc.Alias, doc.CreatedAt, doc.ExpiresAt, doc.LastAccessedAt, doc.ClickCount);
     }
 }

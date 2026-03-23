@@ -1,5 +1,6 @@
 using MediatR;
 using Shortener.Application.Abstractions.ShortUrls;
+using Shortener.Application.Features.Analytics;
 
 namespace Shortener.Application.Features.Redirect;
 
@@ -8,15 +9,18 @@ public class GetRedirectTargetHandler : IRequestHandler<GetRedirectTargetQuery, 
     private readonly IShortUrlLifecyclePolicy _lifecyclePolicy;
     private readonly IShortUrlRepository _repository;
     private readonly IShortUrlCache _cache;
+    private readonly IPublisher _publisher;
 
     public GetRedirectTargetHandler(
         IShortUrlRepository repository,
         IShortUrlCache cache,
-        IShortUrlLifecyclePolicy lifecyclePolicy)
+        IShortUrlLifecyclePolicy lifecyclePolicy,
+        IPublisher publisher)
     {
         _repository = repository;
         _cache = cache;
         _lifecyclePolicy = lifecyclePolicy;
+        _publisher = publisher;
     }
 
     public async Task<GetRedirectTargetResult> Handle(GetRedirectTargetQuery request, CancellationToken cancellationToken)
@@ -36,7 +40,7 @@ public class GetRedirectTargetHandler : IRequestHandler<GetRedirectTargetQuery, 
                 return new GetRedirectTargetResult(string.Empty, false);
             }
 
-            await _repository.MarkAccessedAsync(request.ShortCode, DateTime.UtcNow, cancellationToken);
+            await PublishClickAsync(request.ShortCode, cancellationToken);
             return new GetRedirectTargetResult(cached.LongUrl, true);
         }
 
@@ -53,14 +57,16 @@ public class GetRedirectTargetHandler : IRequestHandler<GetRedirectTargetQuery, 
             return new GetRedirectTargetResult(string.Empty, false);
         }
 
-        var now = DateTime.UtcNow;
-        await _repository.MarkAccessedAsync(request.ShortCode, now, cancellationToken);
-        await _cache.SetAsync(
-            shortUrl.ShortCode,
-            new CachedShortUrl(shortUrl.LongUrl, shortUrl.ExpiresAt),
-            cancellationToken);
+        await PublishClickAsync(request.ShortCode, cancellationToken);
 
         return new GetRedirectTargetResult(shortUrl.LongUrl, true);
+    }
+
+    private Task PublishClickAsync(string shortCode, CancellationToken cancellationToken)
+    {
+        return _publisher.Publish(
+            new ClickTrackedNotification(shortCode, DateTimeOffset.UtcNow),
+            cancellationToken);
     }
 
     private static bool IsExpired(DateTime? expiresAt)
