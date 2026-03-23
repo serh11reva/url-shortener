@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Shortener.Application.Abstractions.ShortUrls;
 using Shortener.Application.Features.Analytics;
 
@@ -10,17 +11,20 @@ public class GetRedirectTargetHandler : IRequestHandler<GetRedirectTargetQuery, 
     private readonly IShortUrlRepository _repository;
     private readonly IShortUrlCache _cache;
     private readonly IPublisher _publisher;
+    private readonly ILogger<GetRedirectTargetHandler> _logger;
 
     public GetRedirectTargetHandler(
         IShortUrlRepository repository,
         IShortUrlCache cache,
         IShortUrlLifecyclePolicy lifecyclePolicy,
-        IPublisher publisher)
+        IPublisher publisher,
+        ILogger<GetRedirectTargetHandler> logger)
     {
         _repository = repository;
         _cache = cache;
         _lifecyclePolicy = lifecyclePolicy;
         _publisher = publisher;
+        _logger = logger;
     }
 
     public async Task<GetRedirectTargetResult> Handle(GetRedirectTargetQuery request, CancellationToken cancellationToken)
@@ -62,11 +66,18 @@ public class GetRedirectTargetHandler : IRequestHandler<GetRedirectTargetQuery, 
         return new GetRedirectTargetResult(shortUrl.LongUrl, true);
     }
 
-    private Task PublishClickAsync(string shortCode, CancellationToken cancellationToken)
+    private async Task PublishClickAsync(string shortCode, CancellationToken cancellationToken)
     {
-        return _publisher.Publish(
-            new ClickTrackedNotification(shortCode, DateTimeOffset.UtcNow),
-            cancellationToken);
+        try
+        {
+            await _publisher.Publish(
+                new ClickTrackedNotification(shortCode, DateTimeOffset.UtcNow),
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "Failed to publish click tracked notification for short code {ShortCode}", shortCode);
+        }
     }
 
     private static bool IsExpired(DateTime? expiresAt)

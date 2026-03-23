@@ -2,14 +2,16 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var cache = builder.AddRedis("cache");
 var messaging = builder.AddAzureServiceBus("messaging")
-    .RunAsEmulator()
-    .AddServiceBusQueue("clicks");
+    .RunAsEmulator(emulator => emulator.WithLifetime(ContainerLifetime.Persistent));
+
+messaging.AddServiceBusQueue("clicks");
+
 var storage = builder
     .AddAzureStorage("storage")
-    .RunAsEmulator();
+    .RunAsEmulator(emulator => emulator.WithLifetime(ContainerLifetime.Persistent));
 var cosmos = builder
     .AddAzureCosmosDB("cosmos-db")
-    .RunAsEmulator();
+    .RunAsEmulator(emulator => emulator.WithLifetime(ContainerLifetime.Persistent));
 var database = cosmos.AddCosmosDatabase("cosmos", databaseName: "shortener");
 
 builder.AddProject<Projects.Shortener_Host_Api>("api")
