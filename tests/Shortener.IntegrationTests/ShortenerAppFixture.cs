@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Shortener.Application.Abstractions.Analytics;
+using Shortener.IntegrationTests.Support;
 using StackExchange.Redis;
 using Testcontainers.CosmosDb;
 using Testcontainers.Redis;
@@ -36,6 +38,9 @@ public sealed class ShortenerAppFixture : IAsyncLifetime, IDisposable
 
         var redisConnectionString = _redis.GetConnectionString();
 
+        const string messagingPlaceholder =
+            "Endpoint=sb://integration-tests.servicebus.windows.net/;SharedAccessKeyName=integration;SharedAccessKey=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
@@ -45,6 +50,7 @@ public sealed class ShortenerAppFixture : IAsyncLifetime, IDisposable
                     {
                         ["ConnectionStrings:cache"] = redisConnectionString,
                         ["ConnectionStrings:cosmos"] = cosmosConnectionString,
+                        ["ConnectionStrings:messaging"] = messagingPlaceholder,
                     });
                 });
 
@@ -55,6 +61,8 @@ public sealed class ShortenerAppFixture : IAsyncLifetime, IDisposable
 
                     ReplaceService<IConnectionMultiplexer>(services,
                         _ => ConnectionMultiplexer.Connect(redisConnectionString));
+
+                    ReplaceService<IQueueStore>(services, _ => new IntegrationTestQueueStore());
                 });
             });
     }

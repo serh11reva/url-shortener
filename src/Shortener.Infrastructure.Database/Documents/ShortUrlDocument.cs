@@ -27,4 +27,7 @@ internal sealed class ShortUrlDocument
 
     [JsonPropertyName("lastAccessedAt")]
     public DateTime? LastAccessedAt { get; set; }
+
+    [JsonPropertyName("clickCount")]
+    public long ClickCount { get; set; }
 }

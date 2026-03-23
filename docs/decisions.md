@@ -14,7 +14,7 @@
 
 **Context:** Redirects must be fast (target <100ms).
 
-**Decision:** Implement Cache-Aside with Redis. Redirect path: check Redis first; on miss, read from Cosmos DB, then cache and redirect.
+**Decision:** Implement Cache-Aside with Redis. Redirect path: check Redis first; on miss, read from Cosmos DB and redirect **without** writing Redis on the redirect path (read-through). Creation may still prime Redis after persist.
 
 **Rationale:** Hitting Cosmos DB for every redirect adds latency and RU cost. Redis provides low-latency key-value lookups and keeps the redirect path read-optimized.
 

@@ -31,7 +31,7 @@ This document provides a prioritized list of work items for building the URL sho
 
 - [x] **3.1** Implement GetRedirectTarget query/handler: lookup by short code; check Redis first (cache-aside), then Cosmos DB; consider expiration and “not accessed for 1 month” (return 404 when expired or deleted).
 - [x] **3.2** Implement redirect endpoint (e.g., GET /{shortCode}): 302/301 to long URL; 404 for missing or expired. Target latency <100ms.
-- [x] **3.3** On cache miss: load from Cosmos DB, validate (not expired, not deleted), cache in Redis, then redirect.
+- [x] **3.3** On cache miss: load from Cosmos DB, validate (not expired, not deleted), redirect (read-through only; do not write Redis on redirect miss).
 - [x] **3.4** Integration tests: redirect hit, cache miss, expired link 404. E2E: create then redirect.
 
 ---
@@ -47,10 +47,10 @@ This document provides a prioritized list of work items for building the URL sho
 
 ## 5. Analytics
 
-- [ ] **5.1** On redirect: enqueue or channel “record click” (short code, timestamp); process asynchronously (no write on redirect path).
-- [ ] **5.2** Analytics handler: update Cosmos DB with click count and last-accessed timestamp (eventual consistency).
-- [ ] **5.3** Expose analytics read (e.g., GET /api/urls/{shortCode}/stats): number of clicks, last accessed timestamp.
-- [ ] **5.4** Use last-accessed to drive “not accessed for 1 month” deletion/TTL (align with 4.2).
+- [x] **5.1** On redirect: enqueue or channel “record click” (short code, timestamp); process asynchronously (no write on redirect path). *(Azure Service Bus queue `clicks`.)*
+- [x] **5.2** Analytics handler: update Cosmos DB with click count and last-accessed timestamp (eventual consistency). *(Azure Function consumer + `RecordClick`.)*
+- [x] **5.3** Expose analytics read (e.g., GET /api/urls/{shortCode}/stats): number of clicks, last accessed timestamp.
+- [x] **5.4** Use last-accessed to drive “not accessed for 1 month” deletion/TTL (align with 4.2).
 - [ ] **5.5** Tests: unit for handler; integration for eventual consistency; E2E for click count visibility.
 
 ---

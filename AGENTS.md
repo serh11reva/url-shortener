@@ -10,6 +10,7 @@ This document defines the specialized AI personas used to build and maintain thi
 - Satisfy [docs/definition-of-done.md](docs/definition-of-done.md) before marking any task complete.
 - **Code style:** Follow the repository [.editorconfig](.editorconfig) for formatting, naming, and code rules. All generated or modified code must conform to it.
 - **Packages:** The solution uses **Central Package Management (CPM)**. Package versions are defined in [Directory.Packages.props](Directory.Packages.props) only. In project files (`.csproj`), use `<PackageReference Include="PackageId" />` without a `Version` attribute. Do not add or change package versions in individual projects.
+- **No NoOp / stub implementations in production code:** Do not add `NoOp*`, `Null*`, or empty “do nothing” implementations in `src/` to satisfy DI when an external dependency is missing. Require real configuration (e.g. connection strings, Aspire references) or use explicit test doubles **only under `tests/`** (e.g. fakes for `WebApplicationFactory`).
 
 ## Documentation Map (Use when implementing)
 
@@ -32,7 +33,7 @@ This document defines the specialized AI personas used to build and maintain thi
 - Use **Minimal API** for the backend: define endpoints with `MapGet`, `MapPost`, etc., and delegate to MediatR handlers. Do not use controller-based MVC (see [docs/decisions.md](docs/decisions.md) ADR-012).
 - Implement RESTful principles and return RFC 7807 ProblemDetails for all errors.
 - Use standard Microsoft.AspNetCore.OpenApi for API versioning and docs.
-- Prioritize high-performance reads (<100ms) using Redis Cache-Aside for redirects.
+- Prioritize high-performance reads (<100ms) using Redis cache-aside **reads** on redirect (read-through on miss; create may prime Redis).
 - Use MediatR **below version 13.0** for CQRS; organize by vertical slices (see [docs/architecture.md](docs/architecture.md)).
 
 ---

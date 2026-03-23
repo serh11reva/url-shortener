@@ -63,35 +63,23 @@ public sealed class CosmosShortUrlRepository : IShortUrlRepository
         await _container.CreateItemAsync(doc, new PartitionKey(doc.Pk), cancellationToken: cancellationToken);
     }
 
-    public async Task MarkAccessedAsync(string shortCode, DateTime accessedAtUtc, CancellationToken cancellationToken = default)
+    public async Task RecordClickAsync(string shortCode, DateTime accessedAtUtc, CancellationToken cancellationToken = default)
     {
-        const string queryText = "SELECT c.id, c.pk FROM c WHERE c.id = @id";
-        var query = new QueryDefinition(queryText).WithParameter("@id", shortCode);
-        using var iterator = _container.GetItemQueryIterator<ShortCodeProjection>(
-            query,
-            requestOptions: new QueryRequestOptions
-            {
-                PartitionKey = new PartitionKey(shortCode),
-                MaxItemCount = 1
-            });
-
-        if (!iterator.HasMoreResults)
+        try
         {
-            return;
+            await _container.PatchItemAsync<ShortUrlDocument>(
+                shortCode,
+                new PartitionKey(shortCode),
+                [
+                    PatchOperation.Increment("/clickCount", 1L),
+                    PatchOperation.Set("/lastAccessedAt", accessedAtUtc)
+                ],
+                cancellationToken: cancellationToken);
         }
-
-        var page = await iterator.ReadNextAsync(cancellationToken);
-        var item = page.FirstOrDefault();
-        if (item is null)
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            return;
+            // Document removed (e.g. cleanup) before click was processed.
         }
-
-        await _container.PatchItemAsync<ShortUrlDocument>(
-            item.Id,
-            new PartitionKey(item.Pk),
-            [PatchOperation.Set("/lastAccessedAt", accessedAtUtc)],
-            cancellationToken: cancellationToken);
     }
 
     public async Task RemoveByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default)

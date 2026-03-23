@@ -15,7 +15,7 @@ Visiting a short URL (e.g., `GET /{shortCode}`) redirects the user to the origin
 
 ## Rules
 
-- **Performance target:** Redirect response in <100ms. Use Redis cache-aside: check Redis first; on miss, read from Cosmos DB, then cache and redirect.
+- **Performance target:** Redirect response in <100ms. Use Redis as read-through cache-aside: check Redis first; on miss, read from Cosmos DB and redirect **without** writing Redis on the redirect path (create may still prime Redis).
 - Do not perform writes on the redirect path (analytics recorded asynchronously; see [Analytics](./analytics.md)).
 - Expired links (optional expiration date passed) → 404.
 - Links deleted due to inactivity (e.g., not accessed for 1 month) → 404.
@@ -27,7 +27,7 @@ Visiting a short URL (e.g., `GET /{shortCode}`) redirects the user to the origin
 - Short code not found → 404.
 - Short code expired → 404.
 - Short code deleted (inactivity) → 404.
-- Cache miss: load from Cosmos DB, then cache and redirect (still target <100ms).
+- Cache miss: load from Cosmos DB and redirect (no cache write on miss; still target <100ms when Cosmos is fast enough).
 - Rate limit exceeded → 429 (applies to all endpoints including redirect).
 
 ## Dependencies

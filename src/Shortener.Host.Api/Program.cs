@@ -7,6 +7,7 @@ using Shortener.Application.Features.Analytics;
 using Shortener.Application.Features.CreateShortUrl;
 using Shortener.Application.Features.Redirect;
 using Shortener.Infrastructure.Database.DependencyInjection;
+using Shortener.Infrastructure.ServiceBus.DependencyInjection;
 using Shortener.Infrastructure.Shared.Configuration;
 using Shortener.Infrastructure.Shared.Health;
 using Shortener.Infrastructure.Shared.Infrastructure;
@@ -28,6 +29,8 @@ builder.AddServiceDefaults(configureHealthChecks: hcb =>
 builder.Services.AddShortenerStorageOptions(builder.Configuration);
 
 builder.AddRedisClient("cache");
+builder.AddAzureServiceBusClient("messaging");
+
 builder.AddAzureCosmosClient("cosmos", configureClientOptions: options =>
 {
     options.UseSystemTextJsonSerializerWithOptions =
@@ -49,6 +52,7 @@ builder.AddAzureCosmosClient("cosmos", configureClientOptions: options =>
 });
 
 builder.Services.AddShortenerDataAccess();
+builder.AddServiceBus();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();

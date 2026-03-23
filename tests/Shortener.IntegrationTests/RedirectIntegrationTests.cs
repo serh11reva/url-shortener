@@ -38,7 +38,7 @@ public sealed class RedirectIntegrationTests : IClassFixture<ShortenerAppFixture
     }
 
     [Fact]
-    public async Task GET_shortCode_CacheMiss_LoadsFromCosmosAndCaches()
+    public async Task GET_shortCode_CacheMiss_LoadsFromCosmosAndRedirects()
     {
         var shortCode = $"miss{Guid.NewGuid():N}"[..11];
         var longUrl = "https://example.com/cache-miss";
@@ -73,11 +73,6 @@ public sealed class RedirectIntegrationTests : IClassFixture<ShortenerAppFixture
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Equal(longUrl, response.Headers.Location?.ToString());
-
-        using var verifyScope = _fixture.Factory.Services.CreateScope();
-        var verifyRedis = verifyScope.ServiceProvider.GetRequiredService<IConnectionMultiplexer>();
-        var cached = await verifyRedis.GetDatabase().StringGetAsync("short:" + shortCode);
-        Assert.False(cached.IsNullOrEmpty);
     }
 
     [Fact]
