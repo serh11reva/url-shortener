@@ -32,17 +32,20 @@ defineProps<{
 
 .control {
   border-radius: var(--radius-control);
-  background: rgba(255, 255, 255, 0.35);
-  box-shadow: var(--shadow-clay-in);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: var(--glass-bg-subtle);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glass-inset);
+  backdrop-filter: var(--glass-blur-soft);
+  -webkit-backdrop-filter: var(--glass-blur-soft);
   padding: 0.15rem 0.25rem;
-  transition: box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .control:focus-within {
+  border-color: rgba(247, 153, 110, 0.65);
   box-shadow:
-    var(--shadow-clay-in),
-    0 0 0 3px rgba(247, 153, 110, 0.45);
+    var(--shadow-glass-inset),
+    0 0 0 3px rgba(247, 153, 110, 0.28);
 }
 
 .control :deep(input) {

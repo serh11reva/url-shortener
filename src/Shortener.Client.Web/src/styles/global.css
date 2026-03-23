@@ -10,16 +10,22 @@
   --c-page-bottom: #4c5a9a;
   --c-text: #2a1f35;
   --c-text-muted: rgba(42, 31, 53, 0.72);
-  --c-clay-light: rgba(255, 255, 255, 0.42);
-  --c-clay-mid: rgba(255, 255, 255, 0.28);
-  --radius-clay: 1.5rem;
+  --glass-bg: rgba(255, 255, 255, 0.22);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.14);
+  --glass-bg-hover: rgba(255, 255, 255, 0.28);
+  --glass-border: rgba(255, 255, 255, 0.42);
+  --glass-border-strong: rgba(255, 255, 255, 0.58);
+  --radius-glass: 1.35rem;
   --radius-control: 1rem;
-  --shadow-clay-out:
-    0.45rem 0.45rem 0.85rem rgba(55, 32, 72, 0.28),
-    -0.35rem -0.35rem 0.7rem rgba(255, 255, 255, 0.35);
-  --shadow-clay-in:
-    inset 0.2rem 0.2rem 0.45rem rgba(76, 47, 96, 0.22),
-    inset -0.2rem -0.2rem 0.45rem rgba(255, 255, 255, 0.45);
+  --glass-blur: blur(22px) saturate(165%);
+  --glass-blur-soft: blur(14px) saturate(150%);
+  --shadow-glass-elevated:
+    0 0.5rem 2rem rgba(42, 31, 53, 0.14),
+    0 0.15rem 0.5rem rgba(42, 31, 53, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  --shadow-glass-inset:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(42, 31, 53, 0.06);
   --font-display: "Nunito", system-ui, sans-serif;
   --font-body: "Nunito", system-ui, sans-serif;
 }
@@ -41,8 +47,9 @@ body {
   font-weight: 500;
   color: var(--c-text);
   background: fixed
-    radial-gradient(120% 80% at 10% 0%, var(--c-dusty) 0%, transparent 55%),
-    radial-gradient(90% 70% at 100% 10%, var(--c-coral) 0%, transparent 45%),
+    radial-gradient(ellipse 90% 70% at 15% 5%, rgba(255, 210, 230, 0.55) 0%, transparent 52%),
+    radial-gradient(ellipse 75% 55% at 95% 15%, rgba(180, 220, 255, 0.5) 0%, transparent 48%),
+    radial-gradient(ellipse 60% 50% at 50% 100%, rgba(247, 153, 110, 0.35) 0%, transparent 55%),
     linear-gradient(165deg, var(--c-page-top) 0%, var(--c-page-mid) 42%, var(--c-page-bottom) 100%);
   -webkit-font-smoothing: antialiased;
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, shallowRef } from 'vue';
-import ClayPanel from '@/components/ClayPanel.vue';
+import GlassPanel from '@/components/GlassPanel.vue';
 import UrlShortenForm from '@/components/UrlShortenForm.vue';
 import ShortUrlResult from '@/components/ShortUrlResult.vue';
 import { ApiError, createShortUrl } from '@/api/shortUrls';
@@ -55,13 +55,12 @@ function resetFlow() {
 
 <template>
   <div class="home">
-    <ClayPanel class="hero">
-      <p class="eyebrow">Clay-soft & fast</p>
+    <GlassPanel class="hero">
       <h1 class="headline">Shrink your links</h1>
       <p class="lede">Paste a long URL, add an optional alias, and share a short link that redirects in a flash.</p>
-    </ClayPanel>
+    </GlassPanel>
 
-    <ClayPanel class="card">
+    <GlassPanel class="card">
       <UrlShortenForm
         v-if="!shortCode"
         ref="formRef"
@@ -75,7 +74,7 @@ function resetFlow() {
 
       <p v-if="submitting" class="status" role="status">Working…</p>
       <p v-else-if="errorMessage" class="error" role="alert">{{ errorMessage }}</p>
-    </ClayPanel>
+    </GlassPanel>
   </div>
 </template>
 

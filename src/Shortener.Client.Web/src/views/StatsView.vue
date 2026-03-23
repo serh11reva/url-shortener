@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, shallowRef, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import ClayPanel from '@/components/ClayPanel.vue';
+import GlassPanel from '@/components/GlassPanel.vue';
 import { ApiError, getAnalytics } from '@/api/shortUrls';
 import { getShortLinkOrigin } from '@/config/shortLinkOrigin';
 
@@ -79,7 +79,7 @@ watch(
 
 <template>
   <div class="stats">
-    <ClayPanel class="panel">
+    <GlassPanel class="panel">
       <RouterLink to="/" class="back">← Back</RouterLink>
       <h1 class="title">Link stats</h1>
       <p class="code">
@@ -98,7 +98,7 @@ watch(
           <dd>{{ lastAccessedLabel }}</dd>
         </div>
       </dl>
-    </ClayPanel>
+    </GlassPanel>
   </div>
 </template>
 
@@ -168,9 +168,11 @@ watch(
 .metric {
   padding: 1rem 1.1rem;
   border-radius: var(--radius-control);
-  background: rgba(255, 255, 255, 0.38);
-  box-shadow: var(--shadow-clay-in);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: var(--glass-bg-subtle);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glass-inset);
+  backdrop-filter: var(--glass-blur-soft);
+  -webkit-backdrop-filter: var(--glass-blur-soft);
 }
 
 .metric dt {

@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
-import ClayPanel from '@/components/ClayPanel.vue';
+import GlassPanel from '@/components/GlassPanel.vue';
 </script>
 
 <template>
   <header class="header">
-    <ClayPanel class="header-panel" tag="div">
+    <GlassPanel class="header-panel" tag="div">
       <RouterLink to="/" class="brand">
         <span class="brand-mark" aria-hidden="true" />
-        <span class="brand-text">Shortener</span>
+        <span class="brand-text">URL Shortener</span>
       </RouterLink>
       <nav class="nav" aria-label="Main">
         <RouterLink to="/" class="nav-link">New link</RouterLink>
       </nav>
-    </ClayPanel>
+    </GlassPanel>
   </header>
 </template>
 
@@ -48,8 +48,11 @@ import ClayPanel from '@/components/ClayPanel.vue';
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 0.75rem;
-  background: linear-gradient(145deg, var(--c-berry), var(--c-indigo));
-  box-shadow: var(--shadow-clay-out);
+  background: linear-gradient(145deg, rgba(113, 47, 121, 0.9), rgba(76, 76, 157, 0.85));
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 0.35rem 1rem rgba(76, 47, 96, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
   position: relative;
 }
 
@@ -76,16 +79,20 @@ import ClayPanel from '@/components/ClayPanel.vue';
   color: var(--c-steel);
   padding: 0.4rem 0.75rem;
   border-radius: var(--radius-control);
-  transition: background 0.15s ease, color 0.15s ease;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .nav-link:hover {
-  background: var(--c-clay-mid);
+  background: var(--glass-bg-hover);
   color: var(--c-berry);
 }
 
 .nav-link.router-link-active {
-  background: var(--c-clay-light);
+  background: var(--glass-bg);
   color: var(--c-berry);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur-soft);
+  -webkit-backdrop-filter: var(--glass-blur-soft);
 }
 </style>

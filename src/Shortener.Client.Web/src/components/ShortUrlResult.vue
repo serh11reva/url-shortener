@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import ClayPanel from '@/components/ClayPanel.vue';
-import ClayButton from '@/components/ClayButton.vue';
+import GlassPanel from '@/components/GlassPanel.vue';
+import GlassButton from '@/components/GlassButton.vue';
 
 const props = defineProps<{
   shortUrl: string;
@@ -32,16 +32,16 @@ async function copyLink() {
 </script>
 
 <template>
-  <ClayPanel class="result" aria-live="polite">
+  <GlassPanel class="result" aria-live="polite">
     <h2 class="title">Your short link</h2>
     <p class="url-line">
       <a :href="shortUrl" class="short-url" target="_blank" rel="noopener noreferrer">{{ shortUrl }}</a>
     </p>
     <div class="actions">
-      <ClayButton type="button" @click="copyLink">{{ copied ? 'Copied!' : 'Copy' }}</ClayButton>
+      <GlassButton type="button" @click="copyLink">{{ copied ? 'Copied!' : 'Copy' }}</GlassButton>
       <RouterLink :to="statsTo" class="stats-link">View stats</RouterLink>
     </div>
-  </ClayPanel>
+  </GlassPanel>
 </template>
 
 <style scoped>
@@ -86,15 +86,18 @@ async function copyLink() {
   text-decoration: none;
   padding: 0.5rem 0.85rem;
   border-radius: var(--radius-control);
-  background: rgba(247, 153, 110, 0.28);
   color: var(--c-text);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 2px 0 rgba(113, 47, 121, 0.12);
-  transition: background 0.15s ease, transform 0.12s ease;
+  background: rgba(247, 153, 110, 0.22);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glass-inset);
+  backdrop-filter: var(--glass-blur-soft);
+  -webkit-backdrop-filter: var(--glass-blur-soft);
+  transition: background 0.15s ease, transform 0.12s ease, border-color 0.15s ease;
 }
 
 .stats-link:hover {
-  background: rgba(247, 153, 110, 0.42);
+  background: rgba(247, 153, 110, 0.34);
+  border-color: var(--glass-border-strong);
 }
 
 .stats-link:active {
