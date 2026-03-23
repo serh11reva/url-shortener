@@ -14,13 +14,21 @@ var cosmos = builder
     .RunAsEmulator(emulator => emulator.WithLifetime(ContainerLifetime.Persistent));
 var database = cosmos.AddCosmosDatabase("cosmos", databaseName: "shortener");
 
-builder.AddProject<Projects.Shortener_Host_Api>("api")
+var api = builder.AddProject<Projects.Shortener_Host_Api>("api")
     .WithReference(cache)
     .WithReference(database)
     .WithReference(messaging)
     .WaitFor(cache)
     .WaitFor(database)
     .WaitFor(messaging);
+
+var apiEndpoint = api.GetEndpoint("https");
+
+builder.AddViteApp("client-web", "../Shortener.Client.Web")
+    .WithReference(api)
+    .WaitFor(api)
+    .WithEnvironment("VITE_API_PROXY_TARGET", apiEndpoint)
+    .WithEnvironment("VITE_SHORT_LINK_ORIGIN", apiEndpoint);
 
 builder.AddAzureFunctionsProject<Projects.Shortener_Host_Functions>("functions")
     .WithHostStorage(storage)
