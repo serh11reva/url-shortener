@@ -1,21 +1,15 @@
 using System.Text.Json;
 using System.Threading.RateLimiting;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using Shortener.Application.Features.Analytics;
-using Shortener.Application.Features.CheckAliasAvailability;
 using Shortener.Application.Features.CreateShortUrl;
-using Shortener.Application.Features.Redirect;
+using Shortener.Host.Api.Endpoints;
 using Shortener.Infrastructure.Database.DependencyInjection;
 using Shortener.Infrastructure.ServiceBus.DependencyInjection;
-using Shortener.Infrastructure.Shared.Configuration;
 using Shortener.Infrastructure.Shared.Health;
 using Shortener.Infrastructure.Shared.Infrastructure;
 using Shortener.ServiceDefaults;
 using StackExchange.Redis;
 using Microsoft.Azure.Cosmos;
-using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -112,53 +106,10 @@ if (!app.Environment.IsDevelopment())
 
 app.UseAuthorization();
 
-// Create short URL: POST /api/urls
-app.MapPost("/api/urls", async (
-    CreateShortUrlRequest request,
-    IMediator mediator,
-    IOptions<ShortenerOptions> options,
-    CancellationToken cancellationToken) =>
-{
-    var command = new CreateShortUrlCommand(request.LongUrl, request.Alias, request.ExpiresAt);
-    var result = await mediator.Send(command, cancellationToken);
-    var baseUrl = options.Value.BaseUrl?.TrimEnd('/');
-    var response = new CreateShortUrlResult(result.ShortCode);
-
-    return Results.Created($"/api/urls/{result.ShortCode}", response);
-})
-.WithName("CreateShortUrl");
-
-// Alias availability: GET /api/aliases/{alias}/availability
-app.MapGet("/api/aliases/{alias}/availability", async (string alias, IMediator mediator, CancellationToken cancellationToken) =>
-{
-    var query = new CheckAliasAvailabilityQuery(alias);
-    var result = await mediator.Send(query, cancellationToken);
-    return Results.Ok(result);
-})
-.WithName("CheckAliasAvailability");
-
-// Redirect: GET /{shortCode}
-app.MapGet("/{shortCode}", async (string shortCode, IMediator mediator, CancellationToken cancellationToken) =>
-{
-    var query = new GetRedirectTargetQuery(shortCode);
-    var result = await mediator.Send(query, cancellationToken);
-
-    return result.Found
-        ? Results.Redirect(result.LongUrl, false)
-        : Results.NotFound();
-})
-.WithName("Redirect")
-.ExcludeFromDescription();
-
-// Analytics: GET /api/urls/{shortCode}/stats
-app.MapGet("/api/urls/{shortCode}/stats", async (string shortCode, IMediator mediator, CancellationToken cancellationToken) =>
-{
-    var query = new GetAnalyticsQuery(shortCode);
-    var result = await mediator.Send(query, cancellationToken);
-
-    return result is not null ? Results.Ok(result) : Results.NotFound();
-})
-.WithName("GetAnalytics");
+app.MapCreateShortUrl();
+app.MapAliasAvailability();
+app.MapRedirect();
+app.MapShortUrlAnalytics();
 
 app.Run();
 
