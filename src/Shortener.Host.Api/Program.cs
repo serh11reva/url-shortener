@@ -51,6 +51,9 @@ builder.AddServiceBus();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+// Rate limits are per process (in-memory).
+// Under horizontal scaling, effective throughput per client is ~N × limit across N replicas — see docs/decisions.md ADR-014.
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;

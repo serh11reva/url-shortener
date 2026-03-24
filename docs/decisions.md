@@ -56,7 +56,7 @@
 
 **Decision:** Apply basic rate limiting and throttling per IP (and optionally per key if auth is added later). Use standard ASP.NET Core rate-limiting middleware or equivalent. Return 429 when limits are exceeded.
 
-**Rationale:** Protects the service from abuse and keeps behavior predictable. Per-IP is a simple, effective first step.
+**Rationale:** Protects the service from abuse and keeps behavior predictable. Per-IP is a simple, effective first step. **Horizontal scaling:** in-process limiters are **per replica**; see [ADR-014](#adr-014-per-instance-rate-limits-no-distributed-store).
 
 ---
 
@@ -127,3 +127,13 @@
 **Decision:** Use an **Azure Functions** project (`Shortener.Host.Functions`) with a **TimerTrigger** as the cleanup host. The function runs on a schedule and orchestrates cleanup logic (TTL reconciliation, inactive-link deletion, cache invalidation as needed). In local development, it is orchestrated by Aspire with Azurite host storage.
 
 **Rationale:** Timer-triggered Functions are a managed, cloud-aligned way to run scheduled jobs without introducing a dedicated worker service runtime. This keeps the API path lean, supports independent scaling/deployment of cleanup behavior, and aligns with Azure-first deployment targets.
+
+---
+
+## ADR-014: Per-Instance Rate Limits (No Distributed Store)
+
+**Context:** ASP.NET Core’s built-in rate limiting uses in-process partitions (e.g., `FixedWindowRateLimiter`). When the API runs multiple instances behind a load balancer, each instance maintains its own counters.
+
+**Decision:** **Accept per-instance limits** as the operational model. We do **not** synchronize rate-limit state across replicas (no Redis-backed or other distributed limiter in the API for this concern). Document that the configured limit applies **per process**; with *N* healthy replicas, a client’s effective ceiling is roughly *N ×* the configured permits per window (assuming even load distribution), not a single global cap.
+
+**Rationale:** Keeps the stack simple and avoids extra Redis traffic and failure modes on every request for throttling alone. Per-instance limiting still protects each replica from overload. If a strict global budget is required later (e.g., commercial API product), revisit with a distributed limiter or edge/gateway rate limiting (see also [ADR-006](#adr-006-abuse-protection)).
