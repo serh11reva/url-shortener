@@ -79,4 +79,16 @@ public sealed class AliasAvailabilityIntegrationTests : IClassFixture<ShortenerA
         var content = await response.Content.ReadAsStringAsync();
         Assert.Contains("Alias", content, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public async Task GET_availability_ReservedAlias_Returns400()
+    {
+        var client = _fixture.Factory.CreateClient();
+
+        var response = await client.GetAsync("/api/aliases/api/availability");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("reserved", content, StringComparison.OrdinalIgnoreCase);
+    }
 }

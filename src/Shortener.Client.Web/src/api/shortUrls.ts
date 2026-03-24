@@ -1,4 +1,9 @@
-import type { AnalyticsResponse, CreateShortUrlResponse, ProblemDetails } from './types';
+import type {
+  AnalyticsResponse,
+  CheckAliasAvailabilityResponse,
+  CreateShortUrlResponse,
+  ProblemDetails,
+} from './types';
 
 function userFacingMessage(problem: ProblemDetails): string {
   return problem.detail?.trim() || problem.title?.trim() || 'Request failed';
@@ -66,4 +71,26 @@ export async function getAnalytics(shortCode: string, signal?: AbortSignal): Pro
   }
 
   return (await response.json()) as AnalyticsResponse;
+}
+
+export async function checkAliasAvailability(
+  alias: string,
+  signal?: AbortSignal,
+): Promise<CheckAliasAvailabilityResponse> {
+  const response = await fetch(
+    `/api/aliases/${encodeURIComponent(alias)}/availability`,
+    { signal },
+  );
+
+  if (response.status === 400) {
+    const problem = await readProblemDetails(response);
+    throw new ApiError(userFacingMessage(problem ?? {}), response.status, problem);
+  }
+
+  if (!response.ok) {
+    const problem = await readProblemDetails(response);
+    throw new ApiError(userFacingMessage(problem ?? {}), response.status, problem);
+  }
+
+  return (await response.json()) as CheckAliasAvailabilityResponse;
 }

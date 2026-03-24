@@ -8,7 +8,7 @@ Input validation, abuse protection, rate limiting per IP, and basic throttling s
 
 - **Input validation:** Validate all inputs (URLs, short codes, aliases). Reject invalid format, length, or dangerous content with 400 and RFC 7807 ProblemDetails. Do not allow raw user input to drive injection (e.g., sanitize or parameterize).
 - **Abuse protection:** Limit how often a client can call the API to prevent abuse and resource exhaustion.
-- **Rate limiting per IP:** Apply rate limits per client IP (e.g., N requests per minute per IP). Return 429 Too Many Requests with Retry-After when exceeded. Use ASP.NET Core rate-limiting middleware or equivalent. **Default:** 100 requests per minute per IP (fixed window); partition key is `RemoteIpAddress` or `X-Forwarded-For` when behind a proxy.
+- **Rate limiting per IP:** Apply rate limits per client IP (e.g., N requests per minute per IP). Return 429 Too Many Requests with Retry-After when exceeded. Use ASP.NET Core rate-limiting middleware or equivalent. **Default:** 100 requests per minute per IP (fixed window); partition key is `RemoteIpAddress` or `X-Forwarded-For` when behind a proxy. **Alias availability** (`GET /api/aliases/{alias}/availability`) uses a **separate** per-IP fixed window of **300 requests per minute** so debounced UI checks do not consume the same budget as other API traffic.
 - **Basic throttling:** Throttle expensive or write-heavy operations (e.g., create short URL) more aggressively than read-only redirects if needed; document limits.
 
 ## Rules

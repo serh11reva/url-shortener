@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Shortener.Application.Features.CreateShortUrl;
 using Shortener.Host.Api.Endpoints;
@@ -62,6 +63,19 @@ builder.Services.AddRateLimiter(options =>
         var ip = httpContext.Connection.RemoteIpAddress?.ToString()
             ?? httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()
             ?? "unknown";
+
+        // Alias availability checks use a higher per-IP ceiling than the default so typing/debounced UI does not exhaust the global budget.
+        if (Program.IsAliasAvailabilityPath(httpContext.Request.Path))
+        {
+            return RateLimitPartition.GetFixedWindowLimiter($"alias-availability:{ip}", _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 300,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            });
+        }
+
         return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = 100,
@@ -118,4 +132,10 @@ app.Run();
 
 public partial class Program
 {
+    private static bool IsAliasAvailabilityPath(PathString path)
+    {
+        var p = path.Value ?? string.Empty;
+        return p.StartsWith("/api/aliases/", StringComparison.OrdinalIgnoreCase)
+            && p.EndsWith("/availability", StringComparison.OrdinalIgnoreCase);
+    }
 }

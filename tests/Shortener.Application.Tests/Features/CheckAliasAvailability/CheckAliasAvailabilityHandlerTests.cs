@@ -17,6 +17,20 @@ public sealed class CheckAliasAvailabilityHandlerTests
     }
 
     [Fact]
+    public async Task Handle_ReservedAlias_ThrowsCreateShortUrlValidationException()
+    {
+        var repository = new FakeRepository();
+        var cache = new FakeCache();
+        var handler = new CheckAliasAvailabilityHandler(cache, repository);
+
+        var ex = await Assert.ThrowsAsync<CreateShortUrlValidationException>(() =>
+            handler.Handle(new CheckAliasAvailabilityQuery("api"), CancellationToken.None));
+
+        Assert.Contains("reserved", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, repository.GetByShortCodeCallCount);
+    }
+
+    [Fact]
     public async Task Handle_CacheKeyExists_ReturnsUnavailableWithoutRepositoryLookup()
     {
         var repository = new FakeRepository();

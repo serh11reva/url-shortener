@@ -6,7 +6,7 @@ Visiting a short URL (e.g., `GET /{shortCode}`) redirects the user to the origin
 
 ## Inputs
 
-- **shortCode** (string): Path segment identifying the short link (e.g., from URL path). May be a **system-generated** Base62 code (up to 7 characters) or a **custom alias** (up to 32 characters, kebab-style segments).
+- **shortCode** (string): Path segment identifying the short link (e.g., from URL path). May be a **system-generated** Base62 code (up to 7 characters) or a **custom alias** (up to 32 characters, kebab-style segments). Custom aliases cannot use a reserved name that would collide with API, health, or app routes on the same host (see [URL Shortening](./url-shortening.md)).
 
 ## Outputs
 

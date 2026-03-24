@@ -7,7 +7,7 @@ Creates a short URL for a given long URL. Each user gets a unique short URL: the
 ## Inputs
 
 - **longUrl** (string, required): The URL to shorten. Must be a valid URL format.
-- **alias** (string, optional): User-defined path segment. Must be unique if provided; up to 32 characters; letters, numbers, and **single hyphens between** alphanumeric segments (kebab-style, e.g. `my-link`). Leading, trailing, or double hyphens are invalid.
+- **alias** (string, optional): User-defined path segment. Must be unique if provided; up to 32 characters; letters, numbers, and **single hyphens between** alphanumeric segments (kebab-style, e.g. `my-link`). Leading, trailing, or double hyphens are invalid. A small **reserved** set of exact aliases is rejected (case-insensitive) so links do not collide with API routes, health/OpenAPI endpoints, or common first-segment SPA paths when the short link is served on the same host—e.g. `api`, `health`, `alive`, `openapi`, `swagger`, `metrics`, `stats`. Aliases such as `my-api` remain valid.
 
 ## Outputs
 
@@ -18,7 +18,7 @@ Creates a short URL for a given long URL. Each user gets a unique short URL: the
 
 - Generate short code using a **counter** converted to Base62 (a-z, A-Z, 0-9); maximum 7 characters.
 - Counter allocation: use ranges from Cosmos DB to support horizontal scaling and avoid collisions.
-- If **alias** is provided: it must be unique; reject with 409 (or 400) if already taken.
+- If **alias** is provided: it must be unique; reject with 409 (or 400) if already taken. Reserved aliases (see Inputs) are rejected with 400.
 - **Idempotent creation (optional):** When enabled, same longUrl + alias returns existing short URL instead of creating a duplicate (see ADR-005).
 - Validate URL format and length; reject invalid input with 400 and ProblemDetails.
 - Persist mapping in Cosmos DB; optionally prime Redis cache after create.

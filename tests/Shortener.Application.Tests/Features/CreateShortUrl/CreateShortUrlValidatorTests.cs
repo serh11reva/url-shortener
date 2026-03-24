@@ -86,6 +86,24 @@ public sealed class CreateShortUrlValidatorTests
         Assert.Contains("hyphens", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData("api")]
+    [InlineData("API")]
+    [InlineData("health")]
+    [InlineData("stats")]
+    public void Validate_ReservedAlias_ThrowsValidationException(string alias)
+    {
+        var ex = Assert.Throws<CreateShortUrlValidationException>(() =>
+            CreateShortUrlValidator.Validate("https://example.com", alias, null));
+        Assert.Contains("reserved", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Validate_NonReservedKebabAlias_DoesNotThrow()
+    {
+        CreateShortUrlValidator.Validate("https://example.com", "my-api", null);
+    }
+
     [Fact]
     public void Validate_AliasEmptyString_ThrowsValidationException()
     {

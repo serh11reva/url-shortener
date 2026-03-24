@@ -14,3 +14,7 @@ export interface ProblemDetails {
   status?: number;
   instance?: string;
 }
+
+export interface CheckAliasAvailabilityResponse {
+  available: boolean;
+}

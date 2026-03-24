@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onBeforeUnmount, ref, watch } from 'vue';
 import GlassField from '@/components/GlassField.vue';
 import GlassButton from '@/components/GlassButton.vue';
+import { ApiError, checkAliasAvailability } from '@/api/shortUrls';
 
-withDefaults(
+const ALIAS_DEBOUNCE_MS = 400;
+
+/** Matches server kebab rules (approximation for client-side gating before calling the API). */
+const ALIAS_FORMAT = /^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$/;
+
+const props = withDefaults(
   defineProps<{
     disabled?: boolean;
   }>(),
@@ -13,6 +19,105 @@ withDefaults(
 const longUrl = ref('');
 const alias = ref('');
 const aliasExpanded = ref(false);
+
+type AliasAvailabilityUi =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'taken'
+  | 'invalid'
+  | 'error'
+  | 'invalid_server';
+
+const aliasAvailability = ref<AliasAvailabilityUi>('idle');
+const aliasServerMessage = ref<string | null>(null);
+
+let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+let availabilityAbort: AbortController | undefined;
+
+function clientAliasFormatOk(trimmed: string): boolean {
+  return trimmed.length > 0 && trimmed.length <= 32 && ALIAS_FORMAT.test(trimmed);
+}
+
+function scheduleAliasAvailabilityCheck() {
+  if (debounceTimer !== undefined) {
+    clearTimeout(debounceTimer);
+    debounceTimer = undefined;
+  }
+  availabilityAbort?.abort();
+
+  if (props.disabled || !aliasExpanded.value) {
+    aliasAvailability.value = 'idle';
+    aliasServerMessage.value = null;
+    return;
+  }
+
+  const trimmed = alias.value.trim();
+  if (trimmed.length === 0) {
+    aliasAvailability.value = 'idle';
+    aliasServerMessage.value = null;
+    return;
+  }
+
+  if (!clientAliasFormatOk(trimmed)) {
+    aliasAvailability.value = 'invalid';
+    aliasServerMessage.value = null;
+    return;
+  }
+
+  aliasAvailability.value = 'checking';
+  aliasServerMessage.value = null;
+
+  debounceTimer = setTimeout(() => {
+    debounceTimer = undefined;
+    availabilityAbort = new AbortController();
+    const signal = availabilityAbort.signal;
+
+    void (async () => {
+      const expectedTrimmed = trimmed;
+      try {
+        const result = await checkAliasAvailability(expectedTrimmed, signal);
+        if (alias.value.trim() !== expectedTrimmed || props.disabled || !aliasExpanded.value) {
+          return;
+        }
+        aliasAvailability.value = result.available ? 'available' : 'taken';
+      } catch (e) {
+        if (e instanceof Error && e.name === 'AbortError') {
+          return;
+        }
+        if (e instanceof ApiError) {
+          if (e.status === 400) {
+            if (alias.value.trim() !== expectedTrimmed || props.disabled || !aliasExpanded.value) {
+              return;
+            }
+            aliasAvailability.value = 'invalid_server';
+            aliasServerMessage.value = e.message;
+            return;
+          }
+        }
+        if (alias.value.trim() !== expectedTrimmed || props.disabled || !aliasExpanded.value) {
+          return;
+        }
+        aliasAvailability.value = 'error';
+        aliasServerMessage.value = null;
+      }
+    })();
+  }, ALIAS_DEBOUNCE_MS);
+}
+
+watch(
+  () => [alias.value, aliasExpanded.value, props.disabled] as const,
+  () => {
+    scheduleAliasAvailabilityCheck();
+  },
+);
+
+onBeforeUnmount(() => {
+  if (debounceTimer !== undefined) {
+    clearTimeout(debounceTimer);
+  }
+  availabilityAbort?.abort();
+});
 
 const emit = defineEmits<{
   submit: [payload: { longUrl: string; alias: string | undefined }];
@@ -30,6 +135,13 @@ defineExpose({
     longUrl.value = '';
     alias.value = '';
     aliasExpanded.value = false;
+    aliasAvailability.value = 'idle';
+    aliasServerMessage.value = null;
+    if (debounceTimer !== undefined) {
+      clearTimeout(debounceTimer);
+      debounceTimer = undefined;
+    }
+    availabilityAbort?.abort();
   },
 });
 </script>
@@ -107,8 +219,29 @@ defineExpose({
             autocomplete="off"
             :disabled="disabled"
             placeholder="Your alias"
+            :aria-describedby="alias.trim() ? 'alias-availability-status' : undefined"
           />
         </GlassField>
+        <p
+          v-if="alias.trim().length > 0"
+          id="alias-availability-status"
+          class="alias-status"
+          role="status"
+          aria-live="polite"
+        >
+          <template v-if="aliasAvailability === 'checking'">Checking availability…</template>
+          <template v-else-if="aliasAvailability === 'available'">This alias is available.</template>
+          <template v-else-if="aliasAvailability === 'taken'">This alias is already taken.</template>
+          <template v-else-if="aliasAvailability === 'invalid'">
+            Use letters, numbers, and single hyphens between segments (for example <span class="nowrap">my-alias</span>).
+          </template>
+          <template v-else-if="aliasAvailability === 'invalid_server'">
+            {{ aliasServerMessage ?? 'This alias cannot be used.' }}
+          </template>
+          <template v-else-if="aliasAvailability === 'error'">
+            Could not check availability. You can still try to shorten; the server will validate.
+          </template>
+        </p>
       </div>
     </div>
 
@@ -193,8 +326,20 @@ defineExpose({
   padding-top: 0.15rem;
 }
 
+.alias-status {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--c-text-muted);
+}
+
 .submit {
   margin-top: 0.25rem;
   align-self: stretch;
+}
+
+.nowrap {
+  white-space: nowrap;
 }
 </style>
