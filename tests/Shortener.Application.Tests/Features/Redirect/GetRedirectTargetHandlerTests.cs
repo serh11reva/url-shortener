@@ -199,5 +199,8 @@ public sealed class GetRedirectTargetHandlerTests
             RemovedCalls.Add(shortCode);
             return Task.CompletedTask;
         }
+
+        public Task<bool> ExistsAsync(string shortCode, CancellationToken cancellationToken = default)
+            => Task.FromResult(CachedResult is not null);
     }
 }

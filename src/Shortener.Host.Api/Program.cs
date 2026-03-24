@@ -4,6 +4,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Shortener.Application.Features.Analytics;
+using Shortener.Application.Features.CheckAliasAvailability;
 using Shortener.Application.Features.CreateShortUrl;
 using Shortener.Application.Features.Redirect;
 using Shortener.Infrastructure.Database.DependencyInjection;
@@ -126,6 +127,15 @@ app.MapPost("/api/urls", async (
     return Results.Created($"/api/urls/{result.ShortCode}", response);
 })
 .WithName("CreateShortUrl");
+
+// Alias availability: GET /api/aliases/{alias}/availability
+app.MapGet("/api/aliases/{alias}/availability", async (string alias, IMediator mediator, CancellationToken cancellationToken) =>
+{
+    var query = new CheckAliasAvailabilityQuery(alias);
+    var result = await mediator.Send(query, cancellationToken);
+    return Results.Ok(result);
+})
+.WithName("CheckAliasAvailability");
 
 // Redirect: GET /{shortCode}
 app.MapGet("/{shortCode}", async (string shortCode, IMediator mediator, CancellationToken cancellationToken) =>

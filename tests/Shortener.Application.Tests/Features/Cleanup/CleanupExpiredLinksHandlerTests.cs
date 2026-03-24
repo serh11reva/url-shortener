@@ -63,6 +63,9 @@ public sealed class CleanupExpiredLinksHandlerTests
             RemovedShortCodes.Add(shortCode);
             return Task.CompletedTask;
         }
+
+        public Task<bool> ExistsAsync(string shortCode, CancellationToken cancellationToken = default)
+            => Task.FromResult(false);
     }
 
     private sealed class FakeLifecyclePolicy : IShortUrlLifecyclePolicy

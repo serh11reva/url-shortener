@@ -15,10 +15,10 @@ public sealed class RedisShortUrlCache : IShortUrlCache
         _redis = redis;
     }
 
-    public async Task<CachedShortUrl?> GetAsync(string shortCode, CancellationToken cancellationToken = default)
+    public async Task<CachedShortUrl?> GetAsync(string shortCodeOrAlias, CancellationToken cancellationToken = default)
     {
         var db = _redis.GetDatabase();
-        var key = KeyPrefix + shortCode;
+        var key = KeyPrefix + shortCodeOrAlias;
         var payload = await db.StringGetAsync(key);
 
         if (payload.IsNullOrEmpty)
@@ -44,13 +44,21 @@ public sealed class RedisShortUrlCache : IShortUrlCache
         return new CachedShortUrl(entry.LongUrl, entry.ExpiresAt);
     }
 
+    public async Task<bool> ExistsAsync(string shortCodeOrAlias, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var db = _redis.GetDatabase();
+        var key = KeyPrefix + shortCodeOrAlias;
+        return await db.KeyExistsAsync(key);
+    }
+
     public async Task SetAsync(
-        string shortCode,
+        string shortCodeOrAlias,
         CachedShortUrl value,
         CancellationToken cancellationToken = default)
     {
         var db = _redis.GetDatabase();
-        var key = KeyPrefix + shortCode;
+        var key = KeyPrefix + shortCodeOrAlias;
         var expiry = ResolveExpiry(value.ExpiresAt);
         var entry = new CachedShortUrlEntry
         {
@@ -61,10 +69,10 @@ public sealed class RedisShortUrlCache : IShortUrlCache
         await db.StringSetAsync(key, payload, expiry);
     }
 
-    public async Task RemoveAsync(string shortCode, CancellationToken cancellationToken = default)
+    public async Task RemoveAsync(string shortCodeOrAlias, CancellationToken cancellationToken = default)
     {
         var db = _redis.GetDatabase();
-        var key = KeyPrefix + shortCode;
+        var key = KeyPrefix + shortCodeOrAlias;
         await db.KeyDeleteAsync(key);
     }
 
