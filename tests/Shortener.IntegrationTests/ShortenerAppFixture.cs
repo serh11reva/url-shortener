@@ -117,7 +117,10 @@ public sealed class ShortenerAppFixture : IAsyncLifetime, IDisposable
             {
                 var database = await client.CreateDatabaseIfNotExistsAsync(databaseId);
                 await database.Database.CreateContainerIfNotExistsAsync(
-                    new ContainerProperties(containerId, partitionKeyPath));
+                    new ContainerProperties(containerId, partitionKeyPath)
+                    {
+                        DefaultTimeToLive = -1,
+                    });
                 return;
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.ServiceUnavailable || ex.Message.Contains("Timeout", StringComparison.OrdinalIgnoreCase))

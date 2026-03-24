@@ -71,7 +71,7 @@ public class GetRedirectTargetHandler : IRequestHandler<GetRedirectTargetQuery, 
         try
         {
             await _publisher.Publish(
-                new ClickTrackedNotification(shortCode, DateTimeOffset.UtcNow),
+                new ClickTrackedNotification(shortCode, DateTimeOffset.UtcNow, Guid.CreateVersion7()),
                 cancellationToken);
         }
         catch (Exception ex)

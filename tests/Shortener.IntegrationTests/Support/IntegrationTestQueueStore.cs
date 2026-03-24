@@ -21,7 +21,11 @@ public sealed class IntegrationTestQueueStore : IQueueStore
         _scopeFactory = scopeFactory;
     }
 
-    public async Task PublishAsync<T>(string queueName, T @event, CancellationToken cancellationToken = default)
+    public Task PublishAsync<T>(string queueName, T @event, CancellationToken cancellationToken = default)
+        where T : class
+        => PublishAsync(queueName, @event, messageId: string.Empty, cancellationToken);
+
+    public async Task PublishAsync<T>(string queueName, T @event, string messageId, CancellationToken cancellationToken = default)
         where T : class
     {
         if (queueName == QueueNames.Clicks && @event is ClickTrackedEvent click)
@@ -29,7 +33,7 @@ public sealed class IntegrationTestQueueStore : IQueueStore
             using var scope = _scopeFactory.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
             await mediator
-                .Send(new RecordClickCommand(click.ShortCode, click.OccurredAtUtc), cancellationToken)
+                .Send(new RecordClickCommand(click.ShortCode, click.OccurredAtUtc, click.ClickId), cancellationToken)
                 .ConfigureAwait(false);
         }
     }

@@ -12,6 +12,7 @@ Track usage of short links: number of clicks and last-accessed timestamp. Data i
 ## Rules
 
 - **No writes on redirect path:** Recording a click must not block the redirect. The API publishes a small JSON message to **Azure Service Bus** (queue); an **Azure Function** consumes messages and updates Cosmos DB asynchronously.
+- **Idempotent analytics:** Each redirect generates a unique **click id** (included in the message body and as Service Bus **MessageId**). The queue should have **duplicate detection** enabled so accidental double-publishes with the same `MessageId` are dropped within the detection window. The worker applies a **durable idempotency** marker in Cosmos DB (transactional batch with the counter patch) so **redelivery** of the same message does not increment twice.
 - **Eventual consistency:** Accept that click count and last-accessed may lag by seconds (or more under load). API that returns analytics (e.g., GET /api/urls/{shortCode}/stats) reads from Cosmos DB.
 - **Last-accessed and inactivity:** Last-accessed timestamp is used to implement “delete if not accessed for one month” (see [Expiration](./expiration.md)); ensure analytics handler updates this field (and optionally TTL) on each click.
 - Store data in Cosmos DB (same container or dedicated; design for read and batch/eventual write patterns).
@@ -30,6 +31,7 @@ Track usage of short links: number of clicks and last-accessed timestamp. Data i
 
 - Cosmos DB (persist click count and last-accessed).
 - Azure Service Bus queue; Azure Functions Service Bus trigger; MediatR `RecordClick` command handler.
+- **Azure (production):** Create the `clicks` queue with **duplicate detection enabled** (cannot be toggled on later). Set `DuplicateDetectionHistoryTimeWindow` to at least the publisher retry window (e.g. 10 minutes). **Docker Compose** local runs use [docker/sb-emulator-config.json](../../docker/sb-emulator-config.json) with duplicate detection on; the Aspire Service Bus emulator may differ—Cosmos idempotency still prevents double counts if the broker redelivers.
 - [Redirects](./redirects.md) — triggers “record click” on each redirect.
 - [Expiration](./expiration.md) — last-accessed drives inactivity deletion.
 

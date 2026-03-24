@@ -21,7 +21,15 @@ public sealed class ServiceBusQueueStore : IQueueStore
         _logger = logger;
     }
 
-    public async Task PublishAsync<T>(string queueName, T @event, CancellationToken cancellationToken = default)
+    public Task PublishAsync<T>(string queueName, T @event, CancellationToken cancellationToken = default)
+        where T : class
+        => PublishCoreAsync(queueName, @event, messageId: null, cancellationToken);
+
+    public Task PublishAsync<T>(string queueName, T @event, string messageId, CancellationToken cancellationToken = default)
+        where T : class
+        => PublishCoreAsync(queueName, @event, messageId, cancellationToken);
+
+    private async Task PublishCoreAsync<T>(string queueName, T @event, string? messageId, CancellationToken cancellationToken)
         where T : class
     {
         try
@@ -32,6 +40,11 @@ public sealed class ServiceBusQueueStore : IQueueStore
             {
                 ContentType = "application/json",
             };
+            if (!string.IsNullOrWhiteSpace(messageId))
+            {
+                message.MessageId = messageId;
+            }
+
             await sender.SendMessageAsync(message, cancellationToken);
         }
         catch (Exception ex)

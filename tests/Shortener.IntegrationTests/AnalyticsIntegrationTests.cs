@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 using Shortener.Application.Features.Analytics;
 using Shortener.Application.Features.CreateShortUrl;
 
@@ -9,7 +11,8 @@ namespace Shortener.IntegrationTests;
 /// Analytics over HTTP: redirect path publishes clicks; test queue applies <see cref="RecordClickCommand"/> like the Functions host.
 /// Includes polling for stats to match production eventual-consistency expectations.
 /// </summary>
-public sealed class AnalyticsIntegrationTests : IClassFixture<ShortenerAppFixture>
+[Collection("Integration")]
+public sealed class AnalyticsIntegrationTests
 {
     private static readonly TimeSpan StatsWait = TimeSpan.FromSeconds(15);
 
@@ -56,6 +59,32 @@ public sealed class AnalyticsIntegrationTests : IClassFixture<ShortenerAppFixtur
         Assert.NotNull(stats);
         Assert.Equal(redirectCount, stats.ClickCount);
         Assert.NotNull(stats.LastAccessed);
+    }
+
+    [Fact]
+    public async Task RecordClick_SameClickIdTwice_CountsOnce()
+    {
+        var client = _fixture.Factory.CreateClient();
+        var longUrl = $"https://example.com/dedup-{Guid.NewGuid():N}";
+        var createResponse = await client.PostAsJsonAsync("/api/urls", new CreateShortUrlRequest(longUrl, null));
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var created = await createResponse.Content.ReadFromJsonAsync<CreateShortUrlResult>();
+        Assert.NotNull(created?.ShortCode);
+        var shortCode = created.ShortCode;
+
+        _ = _fixture.Factory.Server;
+
+        var scopeFactory = _fixture.Factory.Services.GetRequiredService<IServiceScopeFactory>();
+        using var scope = scopeFactory.CreateScope();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+        var clickId = Guid.NewGuid();
+        var at = DateTimeOffset.UtcNow;
+        await mediator.Send(new RecordClickCommand(shortCode, at, clickId), CancellationToken.None);
+        await mediator.Send(new RecordClickCommand(shortCode, at, clickId), CancellationToken.None);
+
+        var stats = await WaitForStatsAsync(client, shortCode, minClickCount: 1, StatsWait);
+        Assert.NotNull(stats);
+        Assert.Equal(1L, stats.ClickCount);
     }
 
     [Fact]

@@ -7,7 +7,8 @@ using Shortener.Application.Features.CreateShortUrl;
 
 namespace Shortener.IntegrationTests;
 
-public sealed class AliasAvailabilityIntegrationTests : IClassFixture<ShortenerAppFixture>
+[Collection("Integration")]
+public sealed class AliasAvailabilityIntegrationTests
 {
     private readonly ShortenerAppFixture _fixture;
 

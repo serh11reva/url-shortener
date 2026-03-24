@@ -19,7 +19,11 @@ public sealed class RecordClickHandler : IRequestHandler<RecordClickCommand>
     {
         try
         {
-            await _repository.RecordClickAsync(request.ShortCode, request.OccurredAtUtc.UtcDateTime, cancellationToken)
+            await _repository.RecordClickAsync(
+                    request.ShortCode,
+                    request.ClickId,
+                    request.OccurredAtUtc.UtcDateTime,
+                    cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (Exception ex)

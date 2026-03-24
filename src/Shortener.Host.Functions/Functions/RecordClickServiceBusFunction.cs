@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Azure.Messaging.ServiceBus;
 using MediatR;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -21,9 +22,10 @@ public sealed class RecordClickServiceBusFunction
 
     [Function(nameof(RecordClickServiceBusFunction))]
     public async Task RunAsync(
-        [ServiceBusTrigger(QueueNames.Clicks, Connection = "messaging")] string messageBody,
+        [ServiceBusTrigger(QueueNames.Clicks, Connection = "messaging")] ServiceBusReceivedMessage message,
         CancellationToken cancellationToken)
     {
+        var messageBody = message.Body.ToString();
         ClickEventDto? dto;
         try
         {
@@ -41,8 +43,18 @@ public sealed class RecordClickServiceBusFunction
             throw new InvalidOperationException("Click analytics message missing shortCode.");
         }
 
-        await _mediator.Send(new RecordClickCommand(dto.ShortCode, dto.OccurredAtUtc), cancellationToken);
+        Guid? resolvedId = dto.ClickId is { } cid && cid != Guid.Empty ? cid : null;
+        resolvedId ??= Guid.TryParse(message.MessageId, out var parsedMessageId) && parsedMessageId != Guid.Empty
+            ? parsedMessageId
+            : null;
+        if (resolvedId is null)
+        {
+            _logger.LogError("Click analytics message missing clickId and usable Service Bus MessageId.");
+            throw new InvalidOperationException("Click analytics message missing click id.");
+        }
+
+        await _mediator.Send(new RecordClickCommand(dto.ShortCode, dto.OccurredAtUtc, resolvedId.Value), cancellationToken);
     }
 
-    private sealed record ClickEventDto(string ShortCode, DateTimeOffset OccurredAtUtc);
+    private sealed record ClickEventDto(Guid? ClickId, string ShortCode, DateTimeOffset OccurredAtUtc);
 }

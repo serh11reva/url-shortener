@@ -6,7 +6,8 @@ using StackExchange.Redis;
 
 namespace Shortener.IntegrationTests;
 
-public sealed class RedirectIntegrationTests : IClassFixture<ShortenerAppFixture>
+[Collection("Integration")]
+public sealed class RedirectIntegrationTests
 {
     private readonly ShortenerAppFixture _fixture;
 

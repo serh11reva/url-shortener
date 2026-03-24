@@ -28,7 +28,8 @@ public sealed class PublishClickTrackedNotificationHandler : INotificationHandle
 
             await _queueStore.PublishAsync(
                     QueueNames.Clicks,
-                    new ClickTrackedEvent(notification.ShortCode, notification.OccurredAtUtc),
+                    new ClickTrackedEvent(notification.ShortCode, notification.OccurredAtUtc, notification.ClickId),
+                    notification.ClickId.ToString("D"),
                     timeoutCts.Token)
                 .ConfigureAwait(false);
         }

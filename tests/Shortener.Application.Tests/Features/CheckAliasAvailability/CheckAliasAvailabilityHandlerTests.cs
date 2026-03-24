@@ -112,7 +112,7 @@ public sealed class CheckAliasAvailabilityHandlerTests
         public Task AddAsync(ShortUrl entity, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
 
-        public Task RecordClickAsync(string shortCode, DateTime accessedAtUtc, CancellationToken cancellationToken = default)
+        public Task RecordClickAsync(string shortCode, Guid clickId, DateTime accessedAtUtc, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
 
         public Task RemoveByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default)

@@ -37,7 +37,11 @@ public static class ServiceCollectionExtensions
                 var db = client.CreateDatabaseIfNotExistsAsync(cosmosOpts.DatabaseId)
                     .GetAwaiter().GetResult();
                 var containerResponse = db.Database.CreateContainerIfNotExistsAsync(
-                        new ContainerProperties(cosmosOpts.ContainerId, "/pk"))
+                        new ContainerProperties(cosmosOpts.ContainerId, "/pk")
+                        {
+                            // Enables optional per-item ttl (e.g. click idempotency markers).
+                            DefaultTimeToLive = -1,
+                        })
                     .GetAwaiter().GetResult();
 
                 try

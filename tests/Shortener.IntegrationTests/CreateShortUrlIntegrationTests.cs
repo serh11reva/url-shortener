@@ -4,7 +4,8 @@ using Shortener.Application.Features.CreateShortUrl;
 
 namespace Shortener.IntegrationTests;
 
-public sealed class CreateShortUrlIntegrationTests : IClassFixture<ShortenerAppFixture>
+[Collection("Integration")]
+public sealed class CreateShortUrlIntegrationTests
 {
     private readonly ShortenerAppFixture _fixture;
 

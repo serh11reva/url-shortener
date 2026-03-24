@@ -31,7 +31,9 @@ public sealed class GetRedirectTargetHandlerTests
         Assert.Equal("https://example.com/cache-hit", result.LongUrl);
         Assert.Equal(0, repository.GetByShortCodeCallCount);
         Assert.Single(publisher.Notifications);
-        Assert.Equal("abc123", ((ClickTrackedNotification)publisher.Notifications[0]).ShortCode);
+        var n0 = (ClickTrackedNotification)publisher.Notifications[0];
+        Assert.Equal("abc123", n0.ShortCode);
+        Assert.NotEqual(Guid.Empty, n0.ClickId);
     }
 
     [Fact]
@@ -56,7 +58,9 @@ public sealed class GetRedirectTargetHandlerTests
         Assert.Equal("https://example.com/db", result.LongUrl);
         Assert.Empty(cache.SetCalls);
         Assert.Single(publisher.Notifications);
-        Assert.Equal("code01", ((ClickTrackedNotification)publisher.Notifications[0]).ShortCode);
+        var n0 = (ClickTrackedNotification)publisher.Notifications[0];
+        Assert.Equal("code01", n0.ShortCode);
+        Assert.NotEqual(Guid.Empty, n0.ClickId);
     }
 
     [Fact]
@@ -159,7 +163,7 @@ public sealed class GetRedirectTargetHandlerTests
         public Task AddAsync(ShortUrl entity, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
 
-        public Task RecordClickAsync(string shortCode, DateTime accessedAtUtc, CancellationToken cancellationToken = default)
+        public Task RecordClickAsync(string shortCode, Guid clickId, DateTime accessedAtUtc, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
 
         public Task RemoveByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default)

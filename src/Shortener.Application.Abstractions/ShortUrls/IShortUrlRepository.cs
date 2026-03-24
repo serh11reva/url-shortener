@@ -12,7 +12,10 @@ public interface IShortUrlRepository
 
     Task AddAsync(ShortUrl entity, CancellationToken cancellationToken = default);
 
-    Task RecordClickAsync(string shortCode, DateTime accessedAtUtc, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Records one click for analytics. <paramref name="clickId"/> must be unique per redirect; duplicate ids are ignored (no second increment).
+    /// </summary>
+    Task RecordClickAsync(string shortCode, Guid clickId, DateTime accessedAtUtc, CancellationToken cancellationToken = default);
 
     Task RemoveByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default);
 

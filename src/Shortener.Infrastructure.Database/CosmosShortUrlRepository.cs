@@ -1,5 +1,6 @@
 using System.Net;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Extensions.Logging;
 using Shortener.Application.Abstractions.Exceptions;
 using Shortener.Application.Abstractions.ShortUrls;
 using Shortener.Domain;
@@ -13,11 +14,14 @@ namespace Shortener.Infrastructure.Database;
 /// </summary>
 public sealed class CosmosShortUrlRepository : IShortUrlRepository
 {
+    private const int ClickIdempotencyTtlSeconds = 604800; // 7 days
     private readonly Container _container;
+    private readonly ILogger<CosmosShortUrlRepository> _logger;
 
-    public CosmosShortUrlRepository(Container container)
+    public CosmosShortUrlRepository(Container container, ILogger<CosmosShortUrlRepository> logger)
     {
         _container = container;
+        _logger = logger;
     }
 
     public async Task<ShortUrl?> GetByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default)
@@ -72,23 +76,62 @@ public sealed class CosmosShortUrlRepository : IShortUrlRepository
         }
     }
 
-    public async Task RecordClickAsync(string shortCode, DateTime accessedAtUtc, CancellationToken cancellationToken = default)
+    public async Task RecordClickAsync(string shortCode, Guid clickId, DateTime accessedAtUtc, CancellationToken cancellationToken = default)
     {
-        try
+        var idempotencyId = FormattableString.Invariant($"idem-{clickId:D}");
+        var idempotencyDoc = new ClickIdempotencyDocument
         {
-            await _container.PatchItemAsync<ShortUrlDocument>(
-                shortCode,
-                new PartitionKey(shortCode),
-                [
-                    PatchOperation.Increment("/clickCount", 1L),
-                    PatchOperation.Set("/lastAccessedAt", accessedAtUtc)
-                ],
-                cancellationToken: cancellationToken);
-        }
-        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            Id = idempotencyId,
+            Pk = shortCode,
+            Kind = "ClickIdempotency",
+            Ttl = ClickIdempotencyTtlSeconds,
+        };
+
+        var batch = _container.CreateTransactionalBatch(new PartitionKey(shortCode));
+        batch.CreateItem(idempotencyDoc);
+        batch.PatchItem(
+            shortCode,
+            [
+                PatchOperation.Increment("/clickCount", 1L),
+                PatchOperation.Set("/lastAccessedAt", accessedAtUtc)
+            ]);
+
+        using var response = await batch.ExecuteAsync(cancellationToken);
+
+        if (response.IsSuccessStatusCode)
         {
-            // Document removed (e.g. cleanup) before click was processed.
+            return;
         }
+
+        for (var i = 0; i < response.Count; i++)
+        {
+            var op = response[i];
+            if (op.StatusCode == HttpStatusCode.Conflict)
+            {
+                _logger.LogDebug(
+                    "Skipping duplicate click id {ClickId} for short code {ShortCode} (transactional batch op {Index}).",
+                    clickId,
+                    shortCode,
+                    i);
+                return;
+            }
+
+            if (op.StatusCode == HttpStatusCode.NotFound)
+            {
+                // Short URL removed before the batch applied (batch rolled back).
+                return;
+            }
+        }
+
+        _logger.LogError(
+            "Transactional batch failed for click {ClickId} on {ShortCode}: StatusCode={StatusCode}, ErrorMessage={ErrorMessage}",
+            clickId,
+            shortCode,
+            response.StatusCode,
+            response.ErrorMessage);
+
+        throw new InvalidOperationException(
+            $"Cosmos transactional batch failed for click on '{shortCode}': {response.StatusCode} {response.ErrorMessage}");
     }
 
     public async Task RemoveByShortCodeAsync(string shortCode, CancellationToken cancellationToken = default)
@@ -115,6 +158,7 @@ public sealed class CosmosShortUrlRepository : IShortUrlRepository
         const string queryText = """
             SELECT c.id, c.pk FROM c
             WHERE c.pk != "counter"
+              AND NOT STARTSWITH(c.id, "idem-")
               AND (
                 (IS_DEFINED(c.expiresAt) AND NOT IS_NULL(c.expiresAt) AND c.expiresAt <= @nowUtc)
                 OR
