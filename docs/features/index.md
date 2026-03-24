@@ -4,7 +4,7 @@
 
 | Feature | Description | Doc |
 |--------|-------------|-----|
-| URL Shortening | Create short URL from long URL; counter-based 7-char code; optional user-defined alias; optional idempotent create | [url-shortening.md](./url-shortening.md) |
+| URL Shortening | Create short URL from long URL; counter-based Base62 code (max 7); optional custom alias (max 32, kebab hyphens); optional idempotent create | [url-shortening.md](./url-shortening.md) |
 | Redirects | Visiting short URL redirects to original; target <100ms; 404 for expired/missing | [redirects.md](./redirects.md) |
 | Expiration | Optional expiration date; expired → 404; delete if not accessed for 1 month | [expiration.md](./expiration.md) |
 | Analytics | Click count and last-accessed timestamp; eventual consistency; async updates | [analytics.md](./analytics.md) |

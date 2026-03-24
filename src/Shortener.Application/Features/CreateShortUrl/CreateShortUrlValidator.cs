@@ -1,15 +1,10 @@
-using System.Text.RegularExpressions;
 using Shortener.Application.Abstractions.Exceptions;
 
 namespace Shortener.Application.Features.CreateShortUrl;
 
-public static partial class CreateShortUrlValidator
+public static class CreateShortUrlValidator
 {
     public const int MaxLongUrlLength = 2048;
-    public const int MaxAliasLength = 7;
-    public const int MinAliasLength = 1;
-
-    private static readonly Regex AliasRegex = GetAliasRegex();
 
     public static void Validate(string longUrl, string? alias, DateTime? expiresAt)
     {
@@ -36,17 +31,7 @@ public static partial class CreateShortUrlValidator
 
         if (alias is not null)
         {
-            if (alias.Length < MinAliasLength || alias.Length > MaxAliasLength)
-            {
-                throw new CreateShortUrlValidationException(
-                    $"Alias must be between {MinAliasLength} and {MaxAliasLength} characters.");
-            }
-
-            if (!AliasRegex.IsMatch(alias))
-            {
-                throw new CreateShortUrlValidationException(
-                    "Alias must contain only alphanumeric characters (a-z, A-Z, 0-9).");
-            }
+            AliasRules.ValidateFormat(alias);
         }
 
         if (expiresAt.HasValue && expiresAt.Value <= DateTime.UtcNow)
@@ -54,7 +39,4 @@ public static partial class CreateShortUrlValidator
             throw new CreateShortUrlValidationException("ExpiresAt must be a future UTC timestamp.");
         }
     }
-
-    [GeneratedRegex("^[a-zA-Z0-9]+$", RegexOptions.Compiled)]
-    private static partial Regex GetAliasRegex();
 }

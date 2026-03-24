@@ -22,7 +22,7 @@ Input validation, abuse protection, rate limiting per IP, and basic throttling s
 
 - Invalid URL or alias format → 400.
 - Rate limit exceeded → 429, Retry-After when applicable.
-- Very long URL or alias → 400 (length limits).
+- Very long URL or alias → 400 (length limits; custom alias max 32 characters).
 - Malformed or missing required fields → 400.
 
 ## Dependencies

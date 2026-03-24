@@ -94,15 +94,15 @@ defineExpose({
         <GlassField
           id="alias"
           label="Custom alias"
-          hint="Optional. Letters and numbers, up to 7 characters."
+          hint="Optional. Letters, numbers, and single hyphens between segments, up to 32 characters. Server validates the exact rules."
         >
           <input
             id="alias"
             v-model="alias"
             type="text"
             name="alias"
-            maxlength="7"
-            pattern="[a-zA-Z0-9]*"
+            maxlength="32"
+            pattern="[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*"
             inputmode="text"
             autocomplete="off"
             :disabled="disabled"

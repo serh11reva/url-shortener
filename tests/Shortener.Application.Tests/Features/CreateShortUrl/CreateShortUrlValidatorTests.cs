@@ -47,27 +47,43 @@ public sealed class CreateShortUrlValidatorTests
             CreateShortUrlValidator.Validate(longUrl, null, null));
     }
 
-    [Fact]
-    public void Validate_ValidAlias_DoesNotThrow()
+    [Theory]
+    [InlineData("abc12")]
+    [InlineData("a-b")]
+    [InlineData("my-custom-alias")]
+    public void Validate_ValidAlias_DoesNotThrow(string alias)
     {
-        CreateShortUrlValidator.Validate("https://example.com", "abc12", null);
+        CreateShortUrlValidator.Validate("https://example.com", alias, null);
     }
 
     [Fact]
     public void Validate_AliasTooLong_ThrowsValidationException()
     {
+        var alias = new string('a', AliasRules.MaxAliasLength + 1);
         var ex = Assert.Throws<CreateShortUrlValidationException>(() =>
-            CreateShortUrlValidator.Validate("https://example.com", "12345678", null));
-        Assert.Contains("1", ex.Message);
-        Assert.Contains("7", ex.Message);
+            CreateShortUrlValidator.Validate("https://example.com", alias, null));
+        Assert.Contains(AliasRules.MinAliasLength.ToString(), ex.Message);
+        Assert.Contains(AliasRules.MaxAliasLength.ToString(), ex.Message);
+    }
+
+    [Theory]
+    [InlineData("-a")]
+    [InlineData("a--b")]
+    [InlineData("a-")]
+    [InlineData("-")]
+    public void Validate_AliasWithInvalidHyphenPlacement_ThrowsValidationException(string alias)
+    {
+        var ex = Assert.Throws<CreateShortUrlValidationException>(() =>
+            CreateShortUrlValidator.Validate("https://example.com", alias, null));
+        Assert.Contains("hyphens", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
     public void Validate_AliasWithInvalidCharacters_ThrowsValidationException()
     {
         var ex = Assert.Throws<CreateShortUrlValidationException>(() =>
-            CreateShortUrlValidator.Validate("https://example.com", "ab-cd", null));
-        Assert.Contains("alphanumeric", ex.Message, StringComparison.OrdinalIgnoreCase);
+            CreateShortUrlValidator.Validate("https://example.com", "ab_cd", null));
+        Assert.Contains("hyphens", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

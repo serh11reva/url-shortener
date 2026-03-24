@@ -4,9 +4,9 @@
 
 **Context:** How do we generate a unique, maximum 7-character short code that is collision-resilient?
 
-**Decision:** Use a numeric counter converted to a Base62 string (a-z, A-Z, 0-9). Each user gets a unique short URL with length up to 7 characters. User-defined alias is optional and must be unique.
+**Decision:** Use a numeric counter converted to a Base62 string (a-z, A-Z, 0-9). **Auto-generated** short codes are at most 7 characters. **Optional custom aliases** are a separate concept: users may supply their own path segment (different max length and charset—e.g., kebab-style with hyphens between alphanumeric segments) that must still be unique in the same namespace as generated codes.
 
-**Rationale:** Hashing (e.g., MD5) requires collision checking and retries. A counter guarantees uniqueness. To scale horizontally, the API can allocate ranges of counters from Cosmos DB (e.g., 1–1000) and consume them in memory.
+**Rationale:** Hashing (e.g., MD5) requires collision checking and retries. A counter guarantees uniqueness for generated codes. To scale horizontally, the API can allocate ranges of counters from Cosmos DB (e.g., 1–1000) and consume them in memory. Custom aliases reuse the same lookup key shape in Cosmos (id/partition = short code or alias) without changing the counter algorithm.
 
 ---
 

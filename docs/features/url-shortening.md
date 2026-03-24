@@ -2,17 +2,17 @@
 
 ## Description
 
-Creates a short URL for a given long URL. Each user gets a unique short URL with a code of up to 7 characters. The short code is generated from a counter (Base62). Optional user-defined alias is supported.
+Creates a short URL for a given long URL. Each user gets a unique short URL: the **auto-generated** short code is from a counter (Base62), up to 7 characters. An optional **custom alias** is separate (longer, kebab-style; see below).
 
 ## Inputs
 
 - **longUrl** (string, required): The URL to shorten. Must be a valid URL format.
-- **alias** (string, optional): User-defined short code. Must be unique if provided; validated for format and length (e.g., up to 7 characters, alphanumeric).
+- **alias** (string, optional): User-defined path segment. Must be unique if provided; up to 32 characters; letters, numbers, and **single hyphens between** alphanumeric segments (kebab-style, e.g. `my-link`). Leading, trailing, or double hyphens are invalid.
 
 ## Outputs
 
 - **shortUrl** (string): Full short URL (e.g., `https://short.example.com/abc12XY`).
-- **shortCode** (string): The 7-character (or shorter) code or the user-defined alias.
+- **shortCode** (string): The auto-generated Base62 code (up to 7 characters) or the user-defined alias (up to 32 characters with kebab rules).
 
 ## Rules
 
