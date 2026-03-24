@@ -1,5 +1,6 @@
 using System.Net;
 using Microsoft.Azure.Cosmos;
+using Shortener.Application.Abstractions.Exceptions;
 using Shortener.Application.Abstractions.ShortUrls;
 using Shortener.Domain;
 using Shortener.Infrastructure.Database.Documents;
@@ -60,7 +61,15 @@ public sealed class CosmosShortUrlRepository : IShortUrlRepository
     public async Task AddAsync(ShortUrl entity, CancellationToken cancellationToken = default)
     {
         var doc = ShortUrlDocumentMapper.ToDocument(entity);
-        await _container.CreateItemAsync(doc, new PartitionKey(doc.Pk), cancellationToken: cancellationToken);
+        try
+        {
+            await _container.CreateItemAsync(doc, new PartitionKey(doc.Pk), cancellationToken: cancellationToken);
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
+        {
+            // Same document id written concurrently (custom alias or idempotent duplicate create). Handler may reconcile via FindExisting.
+            throw new AliasAlreadyExistsException(entity.ShortCode);
+        }
     }
 
     public async Task RecordClickAsync(string shortCode, DateTime accessedAtUtc, CancellationToken cancellationToken = default)

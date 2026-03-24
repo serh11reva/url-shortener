@@ -59,6 +59,23 @@ public sealed class CreateShortUrlIntegrationTests : IClassFixture<ShortenerAppF
     }
 
     [Fact]
+    public async Task POST_api_urls_ConcurrentDuplicateAlias_OneCreatedRestConflict()
+    {
+        var client = _fixture.Factory.CreateClient();
+        const string alias = "concurrentDupAlias";
+        var tasks = Enumerable.Range(0, 24).Select(i =>
+            client.PostAsJsonAsync(
+                "/api/urls",
+                new CreateShortUrlRequest($"https://example.com/concurrent-{i}", alias)));
+        var responses = await Task.WhenAll(tasks);
+
+        Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Created);
+        Assert.All(
+            responses.Where(r => r.StatusCode != HttpStatusCode.Created),
+            r => Assert.Equal(HttpStatusCode.Conflict, r.StatusCode));
+    }
+
+    [Fact]
     public async Task POST_api_urls_PastExpiration_Returns400()
     {
         var client = _fixture.Factory.CreateClient();

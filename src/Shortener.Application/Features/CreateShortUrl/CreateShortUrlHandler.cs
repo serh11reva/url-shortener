@@ -47,7 +47,25 @@ public sealed class CreateShortUrlHandler : IRequestHandler<CreateShortUrlComman
             request.ExpiresAt,
             null);
 
-        await _repository.AddAsync(entity, cancellationToken);
+        try
+        {
+            await _repository.AddAsync(entity, cancellationToken);
+        }
+        catch (AliasAlreadyExistsException)
+        {
+            // Concurrent idempotent creates (same long URL + alias) or alias race: Cosmos 409 maps here.
+            // If another request just committed our logical row, return it instead of surfacing conflict.
+            var reconciled = await _repository.FindExistingByLongUrlHashAndAliasAsync(
+                longUrlHash,
+                request.Alias,
+                cancellationToken);
+            if (reconciled is not null)
+            {
+                return new CreateShortUrlResult(reconciled.ShortCode);
+            }
+
+            throw;
+        }
 
         return new CreateShortUrlResult(shortCode);
     }
