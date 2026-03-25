@@ -1,6 +1,12 @@
 # URL Shortener
 
-A high-performance, cloud-native URL shortener built with .NET 10 and Vue 3. Shorten long URLs, redirect with sub-100ms latency, and track clicks with optional expiration and cleanup.
+**Portfolio demo** — Hands-on showcase of designing a scalable and distributed URL shortener: patterns typical of high-load systems (cache-aside reads, CQRS, async analytics via messaging, serverless workers, OpenTelemetry, infrastructure-as-code). The goal is to demonstrate end-to-end experience with cloud-native, horizontally scalable architecture.
+
+**What it does:** Built with .NET 10 and Vue 3. Shorten long URLs, redirect with sub-100ms latency targets, and track clicks with optional expiration and cleanup.
+
+---
+
+![Shortener UI](docs/images/app-home.png)
 
 ---
 
