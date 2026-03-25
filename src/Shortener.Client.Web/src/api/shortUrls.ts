@@ -5,20 +5,70 @@ import type {
   ProblemDetails,
 } from './types';
 
-function userFacingMessage(problem: ProblemDetails): string {
-  return problem.detail?.trim() || problem.title?.trim() || 'Request failed';
+function userFacingMessage(problem: ProblemDetails, httpStatus: number): string {
+  const detail = problem.detail?.trim();
+  const title = problem.title?.trim();
+  const fromBody = detail || title;
+  if (fromBody) {
+    return fromBody;
+  }
+  if (httpStatus === 409) {
+    return 'This alias is already in use.';
+  }
+  return 'Request failed';
 }
 
 async function readProblemDetails(response: Response): Promise<ProblemDetails | null> {
   const ct = response.headers.get('content-type') ?? '';
-  if (!ct.includes('application/problem')) {
+  const looksLikeJson =
+    ct.includes('application/json') || ct.includes('application/problem');
+  if (!looksLikeJson) {
     return null;
   }
   try {
-    return (await response.json()) as ProblemDetails;
+    const raw = (await response.json()) as Record<string, unknown>;
+    return {
+      type: pickString(raw, 'type', 'Type'),
+      title: pickString(raw, 'title', 'Title'),
+      detail: pickString(raw, 'detail', 'Detail'),
+      status: pickNumber(raw, 'status', 'Status'),
+      instance: pickString(raw, 'instance', 'Instance'),
+    };
   } catch {
     return null;
   }
+}
+
+function pickString(
+  raw: Record<string, unknown>,
+  camel: string,
+  pascal: string,
+): string | undefined {
+  const a = raw[camel];
+  const b = raw[pascal];
+  if (typeof a === 'string' && a.length > 0) {
+    return a;
+  }
+  if (typeof b === 'string' && b.length > 0) {
+    return b;
+  }
+  return undefined;
+}
+
+function pickNumber(
+  raw: Record<string, unknown>,
+  camel: string,
+  pascal: string,
+): number | undefined {
+  const a = raw[camel];
+  const b = raw[pascal];
+  if (typeof a === 'number' && Number.isFinite(a)) {
+    return a;
+  }
+  if (typeof b === 'number' && Number.isFinite(b)) {
+    return b;
+  }
+  return undefined;
 }
 
 export class ApiError extends Error {
@@ -52,7 +102,7 @@ export async function createShortUrl(
 
   if (!response.ok) {
     const problem = await readProblemDetails(response);
-    throw new ApiError(userFacingMessage(problem ?? {}), response.status, problem);
+    throw new ApiError(userFacingMessage(problem ?? {}, response.status), response.status, problem);
   }
 
   return (await response.json()) as CreateShortUrlResponse;
@@ -67,7 +117,7 @@ export async function getAnalytics(shortCode: string, signal?: AbortSignal): Pro
 
   if (!response.ok) {
     const problem = await readProblemDetails(response);
-    throw new ApiError(userFacingMessage(problem ?? {}), response.status, problem);
+    throw new ApiError(userFacingMessage(problem ?? {}, response.status), response.status, problem);
   }
 
   return (await response.json()) as AnalyticsResponse;
@@ -84,12 +134,12 @@ export async function checkAliasAvailability(
 
   if (response.status === 400) {
     const problem = await readProblemDetails(response);
-    throw new ApiError(userFacingMessage(problem ?? {}), response.status, problem);
+    throw new ApiError(userFacingMessage(problem ?? {}, response.status), response.status, problem);
   }
 
   if (!response.ok) {
     const problem = await readProblemDetails(response);
-    throw new ApiError(userFacingMessage(problem ?? {}), response.status, problem);
+    throw new ApiError(userFacingMessage(problem ?? {}, response.status), response.status, problem);
   }
 
   return (await response.json()) as CheckAliasAvailabilityResponse;

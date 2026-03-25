@@ -124,9 +124,13 @@ const emit = defineEmits<{
 }>();
 
 function onSubmit() {
+  const trimmedAlias = alias.value.trim();
+  if (aliasExpanded.value && trimmedAlias && aliasAvailability.value === 'taken') {
+    return;
+  }
   emit('submit', {
     longUrl: longUrl.value.trim(),
-    alias: alias.value.trim() || undefined,
+    alias: trimmedAlias || undefined,
   });
 }
 
@@ -206,7 +210,6 @@ defineExpose({
         <GlassField
           id="alias"
           label="Custom alias"
-          hint="Optional. Letters, numbers, and single hyphens between segments, up to 32 characters. Server validates the exact rules."
         >
           <input
             id="alias"
@@ -226,6 +229,7 @@ defineExpose({
           v-if="alias.trim().length > 0"
           id="alias-availability-status"
           class="alias-status"
+          :class="{ 'alias-status--taken': aliasAvailability === 'taken' }"
           role="status"
           aria-live="polite"
         >
@@ -245,7 +249,16 @@ defineExpose({
       </div>
     </div>
 
-    <GlassButton type="submit" class="submit" :disabled="disabled">Shorten</GlassButton>
+    <GlassButton
+      type="submit"
+      class="submit"
+      :disabled="
+        disabled ||
+        (aliasExpanded && alias.trim().length > 0 && aliasAvailability === 'taken')
+      "
+    >
+      Shorten
+    </GlassButton>
   </form>
 </template>
 
@@ -332,6 +345,10 @@ defineExpose({
   font-weight: 600;
   line-height: 1.35;
   color: var(--c-text-muted);
+}
+
+.alias-status--taken {
+  color: #9c2d4a;
 }
 
 .submit {

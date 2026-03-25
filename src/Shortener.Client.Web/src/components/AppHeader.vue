@@ -10,9 +10,6 @@ import GlassPanel from '@/components/GlassPanel.vue';
         <span class="brand-mark" aria-hidden="true" />
         <span class="brand-text">URL Shortener</span>
       </RouterLink>
-      <nav class="nav" aria-label="Main">
-        <RouterLink to="/" class="nav-link">New link</RouterLink>
-      </nav>
     </GlassPanel>
   </header>
 </template>
