@@ -24,6 +24,8 @@ bld/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+# Generated ARM from `az bicep build` (optional)
+infra/main.json
 *.nupkg
 *.snupkg
 *.nuget.props
