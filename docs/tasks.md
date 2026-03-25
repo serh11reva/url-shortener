@@ -69,7 +69,7 @@ This document provides a prioritized list of work items for building the URL sho
 - [x] **7.1** Dockerfile for API (multi-stage build).
 - [x] **7.2** Dockerfile for frontend (build static assets; serve via nginx or API).
 - [x] **7.3** Docker Compose: API, Redis, Cosmos DB, frontend.
-- [ ] **7.4** Modular Bicep: resource group, Cosmos DB, Redis, App Service or Container Apps; parameterized for environment.
+- [x] **7.4** Modular Bicep: resource group, Cosmos DB, Redis, App Service or Container Apps; parameterized for environment.
 
 ---
 
@@ -91,3 +91,5 @@ This document provides a prioritized list of work items for building the URL sho
 ---
 
 Agents: when picking a task, read the relevant feature doc under [features/](./features/index.md) and the linked ADRs in [decisions.md](./decisions.md). Mark tasks complete only when the Definition of Done is satisfied.
+
+**Frontend-only tasks:** If you only change `src/Shortener.Client.Web/`, follow [AGENTS.md](../AGENTS.md) **Verification Commands** (Vue `lint` and `build`); do not require a full `dotnet` build/test unless the task also changes backend or shared code.

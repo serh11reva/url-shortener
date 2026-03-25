@@ -28,8 +28,8 @@ When instructions conflict, apply this order:
 1. Read the relevant docs in `docs/` before coding.
 2. Confirm the target slice and architectural boundaries before editing.
 3. Implement the change with complete production code (no placeholders/stubs).
-4. Add or update tests for any behavior change.
-5. Run verification commands and resolve failures.
+4. Add or update tests for any behavior change (skip backend/API tests when the change is UI-only under `src/Shortener.Client.Web/`—see Verification Commands).
+5. Run the appropriate verification commands for the scope of the change and resolve failures.
 6. Confirm Definition of Done criteria.
 7. If uncertainty remains, ask for clarification instead of guessing.
 
@@ -42,11 +42,14 @@ When instructions conflict, apply this order:
 
 ## Verification Commands
 
-Run these from repo root before marking work complete:
+**Scope matters.** Do not run the full .NET pipeline when the task only touches the Vue client.
 
-- `dotnet restore`
-- `dotnet build`
-- `dotnet test`
+| Change scope | When | Commands |
+| ------------ | ---- | -------- |
+| **UI / frontend only** | Edits are confined to `src/Shortener.Client.Web/` (and the task does not change API contracts, shared packages, or backend code) | From `src/Shortener.Client.Web/`: `npm ci` (or `npm install`), then `npm run lint` and `npm run build`. |
+| **Backend, shared contracts, tests, infra, or multi-project** | Anything outside a pure Vue-only scope | From repo root: `dotnet restore`, `dotnet build`, `dotnet test`. |
+
+For UI-only work, skip `dotnet restore`, `dotnet build`, and `dotnet test` unless you also modified non-frontend code or need to verify an end-to-end integration for the task.
 
 ## Documentation Map (Use when implementing)
 
@@ -84,6 +87,7 @@ Run these from repo root before marking work complete:
 - Keep components small and focused.
 - Consume API per [docs/features](docs/features/index.md) (create short URL, redirect, analytics).
 - Prefer typed API clients and explicit loading/error/empty UI states.
+- **Verification:** For changes only under `src/Shortener.Client.Web/`, validate with `npm run lint` and `npm run build` in that directory (see **Verification Commands**). Do not require `dotnet build` / `dotnet test` unless the task also changes backend or shared code.
 
 ---
 
@@ -102,7 +106,7 @@ Run these from repo root before marking work complete:
 ## Definition of Done Checklist (Quick Gate)
 
 - Code follows architecture and `.editorconfig`.
-- Behavior changes are covered by tests.
-- `dotnet build` and `dotnet test` pass.
+- Behavior changes are covered by tests (or, for **UI-only** tasks under `src/Shortener.Client.Web/`, verification is `npm run lint` and `npm run build`—see [docs/definition-of-done.md](docs/definition-of-done.md)).
+- Full solution: `dotnet build` and `dotnet test` pass. **UI-only:** Vue `lint` and `build` pass; skip .NET commands unless the change is not frontend-only.
 - Errors are logged and surfaced correctly (ProblemDetails where relevant).
 - Docs are updated when behavior/contracts/operations change.

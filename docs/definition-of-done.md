@@ -29,6 +29,14 @@ Every feature, task, or work item must satisfy the following before it is consid
 - [ ] **Integration tests:** API flows that touch Cosmos DB or Redis have integration tests (using emulators or test containers where applicable).
 - [ ] **E2E (where applicable):** Critical user journeys (create short URL, redirect, expired 404, analytics) have E2E coverage when in scope for the task.
 
+### UI-only changes (`src/Shortener.Client.Web/`)
+
+When the work is **limited to the Vue app** (no API, shared library, infrastructure, or contract changes):
+
+- [ ] **Vue validation:** From `src/Shortener.Client.Web/`, run `npm ci` (or `npm install`), then `npm run lint` and `npm run build`.
+- [ ] **Tests:** Add or update frontend tests only if the task introduces or changes testable UI behavior and tests are in scope; **do not** require `dotnet test` for a pure UI-only task.
+- Skip the full .NET checklist items that do not apply (e.g., ProblemDetails, Cosmos integration tests) unless the task also touches the backend.
+
 ---
 
 ## Security & Resilience
@@ -59,9 +67,9 @@ Every feature, task, or work item must satisfy the following before it is consid
 Before marking a task complete:
 
 1. Code matches architecture and ADRs.
-2. No silent failures; errors use ProblemDetails.
+2. No silent failures; errors use ProblemDetails (for API/backend changes).
 3. Acceptance criteria and edge cases are covered.
-4. Unit (and where relevant integration/E2E) tests are added and passing.
+4. Unit (and where relevant integration/E2E) tests are added and passing—or, for **UI-only** tasks, Vue `lint` and `build` pass per the UI-only subsection above.
 5. Security (validation, rate limiting) is in place where applicable.
 6. Observability and health are considered.
 7. Deployment (Docker, Bicep) and docs are updated if the change affects them.
