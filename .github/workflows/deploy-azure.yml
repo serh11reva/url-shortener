@@ -1,0 +1,97 @@
+# Deploy: push container images to Azure Container Registry, then subscription-scope Bicep deployment (infra + API on Container Apps).
+# Prerequisites: an existing ACR in the subscription; a GitHub OIDC federated credential (or SP) with rights to deploy at subscription/RG scope and to build in ACR.
+name: Deploy Azure
+
+on:
+  workflow_dispatch:
+    inputs:
+      location:
+        description: 'Azure region (e.g. westeurope)'
+        required: true
+        default: 'westeurope'
+      environmentName:
+        description: 'Logical environment name (dev, staging, prod)'
+        required: true
+        default: 'dev'
+      namePrefix:
+        description: 'Short name prefix for Azure resources'
+        required: true
+        default: 'shortener'
+      acrName:
+        description: 'Azure Container Registry name (short name, not FQDN)'
+        required: true
+      imageTag:
+        description: 'Tag for shortener-api and shortener-web images'
+        required: true
+        default: 'latest'
+      hostingModel:
+        description: 'Bicep hostingModel parameter'
+        required: true
+        default: 'containerApps'
+        type: choice
+        options:
+          - containerApps
+          - appService
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    # Optional: set `environment: <name>` here and store AZURE_* secrets on that environment for approval gates.
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve ACR login server
+        id: acr
+        run: |
+          LOGIN_SERVER=$(az acr show -n "${{ inputs.acrName }}" --query loginServer -o tsv)
+          echo "login_server=${LOGIN_SERVER}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build and push API image
+        run: |
+          az acr build -r "${{ inputs.acrName }}" \
+            --image "shortener-api:${{ inputs.imageTag }}" \
+            -f src/Shortener.Host.Api/Dockerfile \
+            .
+
+      - name: Build and push frontend image
+        run: |
+          az acr build -r "${{ inputs.acrName }}" \
+            --image "shortener-web:${{ inputs.imageTag }}" \
+            -f src/Shortener.Client.Web/Dockerfile \
+            src/Shortener.Client.Web
+
+      - name: Deploy infrastructure and API (Bicep)
+        run: |
+          set -e
+          IMAGE="${{ steps.acr.outputs.login_server }}/shortener-api:${{ inputs.imageTag }}"
+          az deployment sub create \
+            --name "shortener-${{ github.run_id }}" \
+            --location "${{ inputs.location }}" \
+            --template-file infra/main.bicep \
+            --parameters \
+              location="${{ inputs.location }}" \
+              environmentName="${{ inputs.environmentName }}" \
+              namePrefix="${{ inputs.namePrefix }}" \
+              hostingModel="${{ inputs.hostingModel }}" \
+              apiContainerImage="$IMAGE"
+
+      - name: Show deployment outputs
+        run: |
+          az deployment sub show \
+            --name "shortener-${{ github.run_id }}" \
+            --query properties.outputs \
+            -o json

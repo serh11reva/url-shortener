@@ -75,18 +75,11 @@ This document provides a prioritized list of work items for building the URL sho
 
 ## 8. CI/CD
 
-- [ ] **8.1** Pipeline: build solution; run unit tests.
-- [ ] **8.2** Pipeline: run integration tests (with emulators or test containers if applicable).
-- [ ] **8.3** Pipeline: build Docker images for API (and frontend if applicable).
-- [ ] **8.4** Pipeline: deploy infrastructure (Bicep) to target environment.
-- [ ] **8.5** Pipeline: deploy application (containers or artifacts) to Azure.
-
----
-
-## 9. Documentation & DoD
-
-- [ ] **9.1** Ensure README has: how to run locally (Aspire), how to run with Docker Compose, env vars, and link to docs.
-- [ ] **9.2** All features and tasks verified against [definition-of-done.md](./definition-of-done.md).
+- [x] **8.1** Pipeline: build solution; run unit tests.
+- [x] **8.2** Pipeline: run integration tests (with emulators or test containers if applicable).
+- [x] **8.3** Pipeline: build Docker images for API (and frontend if applicable).
+- [x] **8.4** Pipeline: deploy infrastructure (Bicep) to target environment.
+- [x] **8.5** Pipeline: deploy application (containers or artifacts) to Azure.
 
 ---
 
