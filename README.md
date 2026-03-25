@@ -15,7 +15,7 @@
 - **Shorten URLs** — Submit a long URL; get a unique short code (up to 7 characters, Base62). Optional custom alias and idempotent creation (same URL + alias returns existing short link).
 - **Fast redirects** — Redis cache-aside for reads; on miss the API loads from Cosmos DB without writing Redis on redirect (read-through). Expired or missing links return 404.
 - **Expiration & cleanup** — Optional per-link expiration date; links not accessed for one month can be removed (Cosmos DB TTL plus scheduled cleanup via Azure Functions timer trigger).
-- **Analytics** — Click count and last-accessed timestamp: the API publishes click events to **Azure Service Bus**; an Azure Function consumes messages and patches Cosmos DB so redirects stay fast and scalable.
+- **Analytics** — Click count and last-accessed timestamp: the API publishes click events to Azure Service Bus; an Azure Function consumes messages and patches Cosmos DB so redirects stay fast and scalable.
 - **Abuse protection** — Rate limiting and throttling per IP; RFC 7807 ProblemDetails for consistent error responses.
 
 ---
@@ -30,7 +30,8 @@
 | Cache         | Redis                                                   |
 | Messaging     | Azure Service Bus (queues)                              |
 | Orchestration | .NET Aspire                                             |
-| Deployment    | Docker Compose, Azure Bicep                             |
+| Background    | Azure Functions (timer cleanup, Service Bus consumer)   |
+| Deployment    | Docker Compose, Azure Bicep, GitHub Actions CI          |
 
 ---
 
@@ -39,7 +40,8 @@
 ### Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for Redis and Cosmos DB emulators or containers)
+- [Node.js](https://nodejs.org/) (LTS recommended; required for the Aspire-hosted Vite client and for Vue lint/build—see [CI](.github/workflows/ci.yml))
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for Redis, Cosmos DB, Service Bus emulators, and Docker Compose)
 
 ### Run locally with Aspire
 
@@ -49,13 +51,13 @@ From the repository root:
 dotnet run --project src/Shortener.AppHost
 ```
 
-Aspire starts the API, Redis, Cosmos DB emulator, **Azure Service Bus emulator**, Azure Storage emulator (Azurite), and the Azure Functions host (`Shortener.Host.Functions`) for cleanup and **click analytics consumption**. Open the Aspire dashboard URL shown in the console to inspect services and logs.
+Aspire starts the API, the Vite-based web client, Redis, the Cosmos DB emulator, the Azure Service Bus emulator, the Azure Storage emulator (Azurite), and the Azure Functions host (`Shortener.Host.Functions`) for scheduled cleanup and Service Bus click consumption. Open the Aspire dashboard URL shown in the console to inspect services and logs.
 
-The cleanup function schedule is configured in `src/Shortener.Host.Functions/local.settings.json` using `CleanupSchedule` (development default: once per minute). When you run the Functions project **without** Aspire, set `ConnectionStrings:messaging` to your Service Bus connection string (the host maps `ConnectionStrings__messaging` to the binding name `messaging` used by the Service Bus trigger).
+The cleanup function schedule is configured in `src/Shortener.Host.Functions/local.settings.json` using `CleanupSchedule` (development default: once per minute). When you run the Functions project without Aspire, set `ConnectionStrings:messaging` to your Service Bus connection string (the host maps `ConnectionStrings__messaging` to the binding name `messaging` used by the Service Bus trigger).
 
 ### Run with Docker Compose
 
-Run the entire solution in containers (API, frontend, Redis, Cosmos DB emulator, Azure Service Bus emulator):
+Run the API, web UI, Redis, Cosmos DB emulator, and Azure Service Bus emulator in containers. This path does not start Azure Functions or the storage emulator; background cleanup and click analytics consumption run when you use Aspire above.
 
 ```bash
 docker compose up --build
@@ -69,7 +71,7 @@ Short links resolve via the frontend origin (e.g. `http://localhost:3000/{shortC
 
 ### Environment variables
 
-Connection strings and keys (Cosmos DB, Redis, **Service Bus**) are configured via Aspire or environment variables. For local development, use [user secrets](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets) or a `.env` file (see `.env.example` if present). Do not commit secrets.
+Connection strings and keys (Cosmos DB, Redis, Service Bus) are configured via Aspire or environment variables. For local development, use [user secrets](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets) or a `.env` file (see the root [`.env.example`](.env.example) and [`src/Shortener.Client.Web/.env.example`](src/Shortener.Client.Web/.env.example) where applicable). Do not commit secrets.
 
 ---
 
@@ -77,7 +79,7 @@ Connection strings and keys (Cosmos DB, Redis, **Service Bus**) are configured v
 
 ```text
 src/
-├── Shortener.AppHost/              # Aspire host (API, Redis, Cosmos, Service Bus emulator, Functions)
+├── Shortener.AppHost/              # Aspire host (API, Vite client, Redis, Cosmos, SB emulator, storage emulator, Functions)
 ├── Shortener.Host.Api/             # Minimal API (redirect, create, analytics)
 ├── Shortener.Host.Functions/       # Azure Functions: cleanup timer + Service Bus click consumer
 ├── Shortener.ServiceDefaults/      # Shared Aspire, OpenTelemetry, resilience
@@ -89,8 +91,11 @@ src/
 ├── Shortener.Infrastructure.Database/     # Cosmos DB implementation
 └── Shortener.Infrastructure.ServiceBus/   # Click analytics publisher (Service Bus)
 tests/
-└── Shortener.Domain.Tests/         # Domain unit tests
-docs/                               # Architecture, features, ADRs, tasks
+├── Shortener.Domain.Tests/              # Domain unit tests
+├── Shortener.Application.Tests/         # Application layer tests
+├── Shortener.Infrastructure.Database.Tests/ # Persistence integration-style tests
+└── Shortener.IntegrationTests/          # API + Testcontainers
+docs/                                    # Architecture, features, ADRs, tasks
 ```
 
 ---
